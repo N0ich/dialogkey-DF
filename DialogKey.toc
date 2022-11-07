@@ -5,5 +5,4 @@
 ## Version: 1.2.3
 ## SavedVariables: DialogKeyDB
 embeds.xml
-core.lua
 main.lua

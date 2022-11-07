@@ -156,7 +156,7 @@ function DialogKey:DataProviderInterceptor(frame, dataProvider)
 
 	self.frames = {}
 	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
-		if v:GetObjectType() == "Button" then
+		if v:GetObjectType() == "Button" and v:IsVisible() then
 			table.insert(self.frames, v)
 		end
 	end
