@@ -182,27 +182,37 @@ function DialogKey:HandleKey(key)
 	if ignoreInput() then return end
 
 	local doAction = (key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2])
-	local keynum = tonumber(key)
-	if doAction then
-		keynum = 1
-	end
+	local keynum = doAction and 1 or tonumber(key)
 
-	-- StaticPopup1
+	-- DialogKey pressed, interact with popups, accepts..
 	if doAction then
 
 		-- Click Popup
 		if StaticPopup1:IsVisible() then
-			DialogKey:Glow(StaticPopup1Button1, "click")
-			StaticPopup1Button1:Click()
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-
+			-- Case: Soulstone or Reincarn
+			if StaticPopup1Button3 then --and StaticPopup1Button1:GetText() == "Release Spirit" then
+				StaticPopup1Button2:Click()
+				DialogKey:Glow(StaticPopup1Button2, "click")
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				return
+			elseif StaticPopup1Button1:IsEnabled() then
+				DialogKey:Glow(StaticPopup1Button1, "click")
+				StaticPopup1Button1:Click()
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+			-- Click second button when first is disabled
+			else
+				DialogKey:Glow(StaticPopup1Button2, "click")
+				StaticPopup1Button2:Click()
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+			end
+			return
 		-- TurnIn Quest
 		elseif QuestFrameProgressPanel:IsVisible() then
 			DialogKey.frame:SetPropagateKeyboardInput(false)
 			DialogKey:Glow(QuestFrameCompleteButton , "click")
 			CompleteQuest()
 
-		-- AcceptQuest
+		-- Accept Quest
 		elseif QuestFrameDetailPanel:IsVisible() then
 			DialogKey:Glow(QuestFrameAcceptButton , "click")
 			AcceptQuest()
