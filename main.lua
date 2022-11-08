@@ -66,112 +66,111 @@ function DialogKey:OnInitialize()
 
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
-	self.frame:RegisterEvent("QUEST_PROGRESS")
-	self.frame:RegisterEvent("GOSSIP_CLOSED")
-	self.frame:RegisterEvent("QUEST_FINISHED")
-	self.frame:RegisterEvent("QUEST_COMPLETE")
-	self.frame:RegisterEvent("QUEST_DETAIL")
-	self.frame:RegisterEvent("TAXIMAP_OPENED")
-	self.frame:RegisterEvent("MERCHANT_CLOSED")
-	self.frame:RegisterEvent("MERCHANT_SHOW")
+	-- self.frame:RegisterEvent("QUEST_PROGRESS")
+	-- self.frame:RegisterEvent("GOSSIP_CLOSED")
+	-- self.frame:RegisterEvent("QUEST_FINISHED")
+	-- self.frame:RegisterEvent("QUEST_COMPLETE")
+	-- self.frame:RegisterEvent("QUEST_DETAIL")
+	-- self.frame:RegisterEvent("TAXIMAP_OPENED")
+	-- self.frame:RegisterEvent("MERCHANT_CLOSED")
+	-- self.frame:RegisterEvent("MERCHANT_SHOW")
 
 	self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	self.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-
+	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
+	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 	self.frame:SetScript("OnEvent", function(__, event, ...)
 		-- DialogKey just breaks during combat lockdown, so let's unhook OnKeyDown and disable rehooking it until combat ends
-		if (event == "PLAYER_REGEN_DISABLED") then
+		if (event == "QUEST_GREETING") then
+			self.EnumerateGossips_Quest()
+		elseif (event == "GOSSIP_SHOW") then
+			self.EnumerateGossips_Options()
+		elseif (event == "PLAYER_REGEN_DISABLED") then
 			self.frame:SetScript("OnKeyDown", nil)
 			self.combatLockdown = true
 		elseif (event == "PLAYER_REGEN_ENABLED") then
+			self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 			self.combatLockdown = false
 		end
+		-- if (event == "GOSSIP_SHOW") then
+		-- elseif (event == "QUEST_FINISHED" or event == "GOSSIP_CLOSED" or event == "MERCHANT_SHOW" or event == "MERCHANT_CLOSED" or event == "TAXIMAP_OPENED") then
+		-- 	self.itemChoice = -1
+		-- 	self.frame:SetPropagateKeyboardInput(true)
+		-- 	self.frame:SetScript("OnKeyDown", nil)
 
-		if self.combatLockdown then return end
-
-		if (event == "GOSSIP_SHOW") then
-			self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
-		elseif (event == "QUEST_FINISHED" or event == "GOSSIP_CLOSED" or event == "MERCHANT_SHOW" or event == "MERCHANT_CLOSED" or event == "TAXIMAP_OPENED") then
-			self.itemChoice = -1
-			self.frame:SetPropagateKeyboardInput(true)
-			self.frame:SetScript("OnKeyDown", nil)
-		elseif (event == "QUEST_GREETING") then
-			self.EnumerateGossips_Quest()
-			self.frame:SetScript("OnKeyDown", DialogKey.DeprHandleKey)
-		elseif (event == "QUEST_PROGRESS") then
-			self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyComplete)
-		elseif (event == "QUEST_COMPLETE") then
-			DialogKey.itemChoice = -1
-			hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
-			self.frame:SetScript("OnKeyDown", DialogKey.HandleQuestReward)
-		elseif (event == "QUEST_DETAIL") then
-			self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyAccept)
-		end
+		-- 	self.frame:SetScript("OnKeyDown", DialogKey.DeprHandleKey)
+		-- elseif (event == "QUEST_PROGRESS") then
+		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyComplete)
+		-- elseif (event == "QUEST_COMPLETE") then
+		-- 	DialogKey.itemChoice = -1
+		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleQuestReward)
+		-- elseif (event == "QUEST_DETAIL") then
+		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyAccept)
+		-- end
 	end);
 
-	self.oldSetDataProvider = GossipFrame.GreetingPanel.ScrollBox.SetDataProvider
-	GossipFrame.GreetingPanel.ScrollBox.SetDataProvider = function(frame, dataProvider)
-		DialogKey:DataProviderInterceptor(frame, dataProvider)
-	end
-	
+	-- self.oldSetDataProvider = GossipFrame.GreetingPanel.ScrollBox.SetDataProvider
+	-- GossipFrame.GreetingPanel.ScrollBox.SetDataProvider = function(frame, dataProvider)
+	-- 	DialogKey:DataProviderInterceptor(frame, dataProvider)
+	-- end
+
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
 	self.frame:SetPropagateKeyboardInput(true)
 end
 
 -- Enumerates Gossip + Quest entries, and builds frames Table for glowing when selected via keys.
-function DialogKey:DataProviderInterceptor(frame, dataProvider)
-	local newDataProvider = CreateDataProvider()
-	local num = 1
-	local newElementData = nil
-	local newInfo = {}
-	self.gossipChoices = {}
-	for index, elementData in dataProvider:Enumerate() do
-		if not DialogKey.db.global.numKeysForGossip or not elementData.info or num > 9 then
-			newElementData = elementData
-		else
-			newElementData = {}
-			self.gossipChoices[num] = elementData
-			for k,v in pairs(elementData) do
-				if k ~= "info" then
-					newElementData[k] = v
-				else
-					newInfo = {}
-					for l,w in pairs(elementData.info) do
-						if l == "name" or l == "title" then
-							newInfo[l] = num .. ". " .. w
-							num = num + 1
-						else
-							newInfo[l] = w
-						end
-					end
-					newElementData[k] = newInfo
-				end
-			end
-		end
-		newDataProvider:Insert(newElementData)
-	end
+-- function DialogKey:DataProviderInterceptor(frame, dataProvider)
+-- 	local newDataProvider = CreateDataProvider()
+-- 	local num = 1
+-- 	local newElementData = nil
+-- 	local newInfo = {}
+-- 	self.gossipChoices = {}
+-- 	for index, elementData in dataProvider:Enumerate() do
+-- 		if not DialogKey.db.global.numKeysForGossip or not elementData.info or num > 9 then
+-- 			newElementData = elementData
+-- 		else
+-- 			newElementData = {}
+-- 			self.gossipChoices[num] = elementData
+-- 			for k,v in pairs(elementData) do
+-- 				if k ~= "info" then
+-- 					newElementData[k] = v
+-- 				else
+-- 					newInfo = {}
+-- 					for l,w in pairs(elementData.info) do
+-- 						if l == "name" or l == "title" then
+-- 							newInfo[l] = num .. ". " .. w
+-- 							num = num + 1
+-- 						else
+-- 							newInfo[l] = w
+-- 						end
+-- 					end
+-- 					newElementData[k] = newInfo
+-- 				end
+-- 			end
+-- 		end
+-- 		newDataProvider:Insert(newElementData)
+-- 	end
 	
-	self.oldSetDataProvider(frame, newDataProvider)
+-- 	self.oldSetDataProvider(frame, newDataProvider)
 
-	self.frames = {}
-	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
-		if v:GetObjectType() == "Button" and v:IsVisible() then
-			table.insert(self.frames, v)
-		end
-	end
-	table.sort(self.gossipChoices, function(a, b) return a:GetTop() > b:GetTop() end)
-	table.sort(self.frames, function(a, b) return a:GetTop() > b:GetTop() end)
-end
+-- 	self.frames = {}
+-- 	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
+-- 		if v:GetObjectType() == "Button" and v:IsVisible() then
+-- 			table.insert(self.frames, v)
+-- 		end
+-- 	end
+-- 	table.sort(self.gossipChoices, function(a, b) return a:GetTop() > b:GetTop() end)
+-- 	table.sort(self.frames, function(a, b) return a:GetTop() > b:GetTop() end)
+-- end
 
 -- Internal/Private Functions --
 
 local function ignoreInput()
 	DialogKey.frame:SetPropagateKeyboardInput(true)
-
 	-- TODO: ignore input while setting keybinds
 	if GetCurrentKeyBoardFocus() then return true end -- Ignore input while typing
-	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() then return true end -- Ignore input if GossipFrame isn't visible
+	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible() then return true end -- Ignore input if GossipFrame isn't visible
 
 	return false
 end
@@ -181,97 +180,88 @@ end
 -- OnKeyDown handler for GOSSIP_SHOW event
 function DialogKey:HandleKey(key)
 	if ignoreInput() then return end
-	
+
 	local doAction = (key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2])
 	local keynum = tonumber(key)
 	if doAction then
 		keynum = 1
 	end
-	while keynum and keynum > 0 and keynum <= #DialogKey.frames and DialogKey.db.global.numKeysForGossip do
-		choice = DialogKey.frames[keynum].GetElementData()
-		-- Skip grey quest (active but not completed) when pressing DialogKey
-		if choice.info.questID and choice.activeQuestButton and not choice.info.isComplete and doAction then
-			keynum = keynum + 1
-		else
-			DialogKey.frames[keynum]:Click()
-			DialogKey:Glow(DialogKey.frames[keynum], "click")
+
+	-- StaticPopup1
+	if doAction then
+
+		-- Click Popup
+		if StaticPopup1:IsVisible() then
+			DialogKey:Glow(StaticPopup1Button1, "click")
+			StaticPopup1Button1:Click()
 			DialogKey.frame:SetPropagateKeyboardInput(false)
-			return
+
+		-- TurnIn Quest
+		elseif QuestFrameProgressPanel:IsVisible() then
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+			DialogKey:Glow(QuestFrameCompleteButton , "click")
+			CompleteQuest()
+
+		-- AcceptQuest
+		elseif QuestFrameDetailPanel:IsVisible() then
+			DialogKey:Glow(QuestFrameAcceptButton , "click")
+			AcceptQuest()
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+
+		-- Complete Quest
+		elseif QuestFrameRewardPanel:IsVisible() then
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+			if DialogKey.itemChoice == -1 and GetNumQuestChoices() > 0 then
+				QuestChooseRewardError()
+			else
+				DialogKey:Glow(QuestFrameCompleteQuestButton , "click")
+				GetQuestReward(DialogKey.itemChoice)
+			end	
 		end
 	end
-end
-	-- 	if keynum > C_GossipInfo.GetNumAvailableQuests() then
-	-- 		keynum = keynum - C_GossipInfo.GetNumAvailableQuests()
-	-- 	else
-	-- 		DialogKey:Glow(DialogKey.frames[keynumRaw], "click")
-	-- 		C_GossipInfo.SelectAvailableQuest(C_GossipInfo.GetAvailableQuests()[keynum].questID)
-	-- 		DialogKey.frame:SetPropagateKeyboardInput(false)
-	-- 		return
-	-- 	end
 
-	-- 	if keynum > C_GossipInfo.GetNumActiveQuests() then
-	-- 		keynum = keynum - C_GossipInfo.GetNumActiveQuests()
-	-- 	else
-	-- 		DialogKey:print_r(DialogKey.frames[keynumRaw].GetElementData())
-	-- 		print("--------------------------")
-	-- 		DialogKey:print_r(DialogKey.gossipChoices[keynumRaw])
-	-- 		DialogKey:Glow(DialogKey.frames[keynumRaw], "click")
-	-- 		C_GossipInfo.SelectActiveQuest(C_GossipInfo.GetActiveQuests()[keynum].questID)
-	-- 		DialogKey.frame:SetPropagateKeyboardInput(false)
-	-- 		return
-	-- 	end
-
-	-- 	if keynum <= #C_GossipInfo.GetOptions() then
-	-- 		DialogKey:Glow(DialogKey.frames[keynumRaw], "click")
-	-- 		C_GossipInfo.SelectOption(C_GossipInfo.GetOptions()[keynum].gossipOptionID)
-	-- 		DialogKey.frame:SetPropagateKeyboardInput(false)
-	-- 	end
-	-- end
-
--- OnKeyDown handler for QUEST_GREETING event
-function DialogKey:DeprHandleKey(key)
-	if ignoreInput() then return end
-
-	local doAction = (key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2])
-	local keynum = doAction and 1 or tonumber(key)
-
-	while keynum and keynum > 0 and keynum <= #DialogKey.frames do
-		local title, is_complete = GetActiveTitle(keynum)
-		if doAction and not is_complete and DialogKey.frames[keynum].frame.isActive == 1 then
-			keynum = keynum + 1
-			if keynum > #DialogKey.frames then
-				doAction = false
-				keynum = 1
+	-- GossipFrame
+	if GossipFrame.GreetingPanel:IsVisible() then
+		while keynum and keynum > 0 and keynum <= #DialogKey.frames and DialogKey.db.global.numKeysForGossip do
+			choice = DialogKey.frames[keynum].GetElementData()
+			-- Skip grey quest (active but not completed) when pressing DialogKey
+			if choice.info.questID and choice.activeQuestButton and not choice.info.isComplete and doAction then
+				keynum = keynum + 1
+			else
+				DialogKey.frames[keynum]:Click()
+				DialogKey:Glow(DialogKey.frames[keynum], "click")
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				return
 			end
-		else
-			DialogKey:Glow(DialogKey.frames[keynum].frame, "click")
-			DialogKey.frames[keynum].frame:Click()
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			return
 		end
 	end
-end
 
--- OnKeyDown handler for QUEST_PROGRESS event
-function DialogKey:HandleKeyComplete(key)
-	if ignoreInput() then return end
-	if not QuestFrameCompleteButton:IsEnabled() then return end -- don't click grayed out buttons!
-
-	if key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2] then
-		DialogKey.frame:SetPropagateKeyboardInput(false)
-		DialogKey:Glow(QuestFrameCompleteButton , "click")
-		CompleteQuest()
+	-- QuestFrame
+	if QuestFrameGreetingPanel:IsVisible() then
+		while keynum and keynum > 0 and keynum <= #DialogKey.frames do
+			local title, is_complete = GetActiveTitle(keynum)
+			if doAction and not is_complete and DialogKey.frames[keynum].frame.isActive == 1 then
+				keynum = keynum + 1
+				if keynum > #DialogKey.frames then
+					doAction = false
+					keynum = 1
+				end
+			else
+				DialogKey:Glow(DialogKey.frames[keynum].frame, "click")
+				DialogKey.frames[keynum].frame:Click()
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				return
+			end
+		end	
 	end
-end
 
--- OnKeyDown handler for QUEST_DETAIL event
-function DialogKey:HandleKeyAccept(key)
-	if ignoreInput() then return end
-
-	if key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2] then
-		DialogKey:Glow(QuestFrameAcceptButton , "click")
-		AcceptQuest()
-		DialogKey.frame:SetPropagateKeyboardInput(false)
+	-- QuestReward Frame (select item)
+	if QuestFrameCompleteQuestButton:IsVisible() then
+		if GetQuestItemInfo("choice", numkey) then
+			DialogKey.itemChoice = numkey
+			GetClickFrame("QuestInfoRewardsFrameQuestInfoItem"..key):Click()
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+		end
 	end
 end
 
@@ -286,28 +276,30 @@ function DialogKey:SelectItemReward()
 	end
 end
 
--- Deprecated(?) Old Quest Panel Functions --
-
--- OnKeyDown handler for QUEST_COMPLETE event
-function DialogKey:HandleQuestReward(key)
-	if ignoreInput() then return end
-	if not QuestFrameCompleteQuestButton:IsEnabled() then return end -- don't click grayed out buttons!
-
-	local numkey = tonumber(key)
-	if numkey and numkey > 0 and numkey <= GetNumQuestChoices() and DialogKey.db.global.numKeysForQuestRewards then
-		if GetQuestItemInfo("choice", numkey) then
-			DialogKey.itemChoice = numkey
-			GetClickFrame("QuestInfoRewardsFrameQuestInfoItem"..key):Click()
-			DialogKey.frame:SetPropagateKeyboardInput(false)
+function DialogKey:GetGossipButtons()
+	local frames = {}
+	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
+		if v:GetObjectType() == "Button" and v:IsVisible() then
+			table.insert(frames, v)
 		end
 	end
-	if key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2] then
-		DialogKey.frame:SetPropagateKeyboardInput(false)
-		if DialogKey.itemChoice == -1 and GetNumQuestChoices() > 0 then
-			QuestChooseRewardError()
-		else
-			DialogKey:Glow(QuestFrameCompleteQuestButton , "click")
-			GetQuestReward(DialogKey.itemChoice)
+	table.sort(frames, function(a, b) return a:GetTop() > b:GetTop() end)
+	return frames
+end
+
+function DialogKey:EnumerateGossips_Options()		-- Prefixes 1., 2., etc. to NPC options
+	if not DialogKey.db.global.numKeysForGossip then return end
+	if not GossipFrame.GreetingPanel:IsVisible() then return end
+
+	DialogKey.frames = DialogKey:GetGossipButtons()
+	local num = 1
+	for i=1,#DialogKey.frames do
+		local frame = DialogKey.frames[i]
+		if frame:IsVisible() and frame:GetText() then
+			if not frame:GetText():find("^"..num.."\. ") then
+				frame:SetText(num .. ". " .. frame:GetText())
+			end
+			num = num+1
 		end
 	end
 end
@@ -315,14 +307,10 @@ end
 function DialogKey:GetQuestButtons()
 	local frames = {}
 	for f,unknown in QuestFrameGreetingPanel.titleButtonPool:EnumerateActive() do
-		table.insert(frames,{
-			top      = f:GetTop(),
-			frame    = f,
-			name     = f:GetText()
-		})
+		table.insert(frames, f)
 	end
 	
-	table.sort(frames, function(a,b) return a.top > b.top end)
+	table.sort(frames, function(a,b) return a.GetTop() > b.GetTop() end)
 	return frames
 end
 
@@ -344,7 +332,6 @@ function DialogKey:EnumerateGossips_Quest()		-- Prefixes 1., 2., etc. to NPC opt
 end
 
 -- Glow Functions --
-
 -- Show the glow frame over a frame. Mode is "click", "add", or "remove"
 function DialogKey:Glow(frame, mode)
 	if mode == "click" then
