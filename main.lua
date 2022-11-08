@@ -66,14 +66,6 @@ function DialogKey:OnInitialize()
 
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
-	-- self.frame:RegisterEvent("QUEST_PROGRESS")
-	-- self.frame:RegisterEvent("GOSSIP_CLOSED")
-	-- self.frame:RegisterEvent("QUEST_FINISHED")
-	-- self.frame:RegisterEvent("QUEST_COMPLETE")
-	-- self.frame:RegisterEvent("QUEST_DETAIL")
-	-- self.frame:RegisterEvent("TAXIMAP_OPENED")
-	-- self.frame:RegisterEvent("MERCHANT_CLOSED")
-	-- self.frame:RegisterEvent("MERCHANT_SHOW")
 
 	self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	self.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -92,77 +84,12 @@ function DialogKey:OnInitialize()
 			self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 			self.combatLockdown = false
 		end
-		-- if (event == "GOSSIP_SHOW") then
-		-- elseif (event == "QUEST_FINISHED" or event == "GOSSIP_CLOSED" or event == "MERCHANT_SHOW" or event == "MERCHANT_CLOSED" or event == "TAXIMAP_OPENED") then
-		-- 	self.itemChoice = -1
-		-- 	self.frame:SetPropagateKeyboardInput(true)
-		-- 	self.frame:SetScript("OnKeyDown", nil)
-
-		-- 	self.frame:SetScript("OnKeyDown", DialogKey.DeprHandleKey)
-		-- elseif (event == "QUEST_PROGRESS") then
-		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyComplete)
-		-- elseif (event == "QUEST_COMPLETE") then
-		-- 	DialogKey.itemChoice = -1
-		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleQuestReward)
-		-- elseif (event == "QUEST_DETAIL") then
-		-- 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKeyAccept)
-		-- end
 	end);
-
-	-- self.oldSetDataProvider = GossipFrame.GreetingPanel.ScrollBox.SetDataProvider
-	-- GossipFrame.GreetingPanel.ScrollBox.SetDataProvider = function(frame, dataProvider)
-	-- 	DialogKey:DataProviderInterceptor(frame, dataProvider)
-	-- end
 
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
 	self.frame:SetPropagateKeyboardInput(true)
 end
-
--- Enumerates Gossip + Quest entries, and builds frames Table for glowing when selected via keys.
--- function DialogKey:DataProviderInterceptor(frame, dataProvider)
--- 	local newDataProvider = CreateDataProvider()
--- 	local num = 1
--- 	local newElementData = nil
--- 	local newInfo = {}
--- 	self.gossipChoices = {}
--- 	for index, elementData in dataProvider:Enumerate() do
--- 		if not DialogKey.db.global.numKeysForGossip or not elementData.info or num > 9 then
--- 			newElementData = elementData
--- 		else
--- 			newElementData = {}
--- 			self.gossipChoices[num] = elementData
--- 			for k,v in pairs(elementData) do
--- 				if k ~= "info" then
--- 					newElementData[k] = v
--- 				else
--- 					newInfo = {}
--- 					for l,w in pairs(elementData.info) do
--- 						if l == "name" or l == "title" then
--- 							newInfo[l] = num .. ". " .. w
--- 							num = num + 1
--- 						else
--- 							newInfo[l] = w
--- 						end
--- 					end
--- 					newElementData[k] = newInfo
--- 				end
--- 			end
--- 		end
--- 		newDataProvider:Insert(newElementData)
--- 	end
-	
--- 	self.oldSetDataProvider(frame, newDataProvider)
-
--- 	self.frames = {}
--- 	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
--- 		if v:GetObjectType() == "Button" and v:IsVisible() then
--- 			table.insert(self.frames, v)
--- 		end
--- 	end
--- 	table.sort(self.gossipChoices, function(a, b) return a:GetTop() > b:GetTop() end)
--- 	table.sort(self.frames, function(a, b) return a:GetTop() > b:GetTop() end)
--- end
 
 -- Internal/Private Functions --
 
