@@ -5,7 +5,7 @@ local defaults = {
 		keys = {
 			"SPACE",
 		},
-		ignoreDisabledButtons = true,
+		ignoreDisabledButtons = false,
 		showGlow = true,
 		dialogBlacklist = {},
 		numKeysForGossip = true,
@@ -19,6 +19,7 @@ local defaults = {
 	}
 }
 
+-- confirmed still broken as of 10.0.0
 DialogKey.builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
 	"Are you sure you want to go back to Shal'Aran?", -- Seems to bug out and not work if an AddOn clicks the confirm button?
 }
@@ -44,8 +45,13 @@ function DialogKey:OnInitialize()
 	self.frame = CreateFrame("Frame", "DialogKeyFrame", UIParent)
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
+	self.frame:RegisterEvent("QUEST_FINISHED")
 	self.frame:SetScript("OnEvent", function(__, event, ...)
-		self:EnumerateGossips( event == "GOSSIP_SHOW" )
+		if event == "QUEST_FINISHED" then
+			DialogKey.itemChoice = -1
+		else
+			self:EnumerateGossips( event == "GOSSIP_SHOW" )
+		end
 	end);
 
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
@@ -107,7 +113,8 @@ local function getPopupButton()
 
 	for _, text in pairs(DialogKey.builtinDialogBlacklist) do
 		if dialog:find(text:lower()) then
-			DialogKey:print("|cffff3333This dialog casts a spell and does not work with DialogKey. Sorry!|r")
+			DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
+			DialogKey:Glow(DEFAULT_CHAT_FRAME)
 			return
 		end
 	end
@@ -159,7 +166,6 @@ function DialogKey:HandleKey(key)
 			else
 				DialogKey:Glow(QuestFrameCompleteQuestButton)
 				GetQuestReward(DialogKey.itemChoice)
-				DialogKey.itemChoice = -1
 			end
 			return
 		end
@@ -279,7 +285,6 @@ end
 
 function DialogKey:print(message)
 	DEFAULT_CHAT_FRAME:AddMessage("|cffd2b48c[DialogKey]|r "..message.."|r")
-	DialogKey:Glow(DEFAULT_CHAT_FRAME)
 end
 
 -- Recursively print a table
