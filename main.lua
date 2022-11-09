@@ -201,12 +201,10 @@ function DialogKey:HandleKey(key)
 	end
 
 	-- QuestReward Frame (select item)
-	if DialogKey.db.global.numKeysForQuestRewards and QuestFrameCompleteQuestButton:IsVisible() then
-		if GetQuestItemInfo("choice", keynum) then
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey.itemChoice = keynum
-			GetClickFrame("QuestInfoRewardsFrameQuestInfoItem" .. key):Click()
-		end
+	if DialogKey.db.global.numKeysForQuestRewards and keynum and keynum <= GetNumQuestChoices() and QuestFrameCompleteQuestButton:IsVisible() then
+		DialogKey.frame:SetPropagateKeyboardInput(false)
+		DialogKey.itemChoice = keynum
+		GetClickFrame("QuestInfoRewardsFrameQuestInfoItem" .. key):Click()
 	end
 end
 
