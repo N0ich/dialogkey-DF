@@ -1,43 +1,25 @@
-DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey", "AceConsole-3.0", "AceTimer-3.0", "AceEvent-3.0")
+DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey")
 
 local defaults = {
 	global = {
 		keys = {
 			"SPACE",
 		},
-		-- ignoreDisabledButtons = true,
+		ignoreDisabledButtons = false,
 		showGlow = true,
-
-		-- additionalButtons = {},
-		-- dialogBlacklist = {},
+		dialogBlacklist = {},
 		numKeysForGossip = true,
 		numKeysForQuestRewards = true,
-		-- scrollQuests = false,
-		-- dontClickSummons = false,
-		-- dontClickDuels = false,
-		-- dontClickRevives = false,
-		-- dontClickReleases = false,
-		-- soulstoneRez = true,
+		dontClickSummons = false,
+		dontClickDuels = false,
+		dontClickRevives = false,
+		dontClickReleases = false,
+		useSoulstoneRez = true,
 		-- keyCooldown = 0.5
 	}
 }
 
--- DialogKey.buttons = {							-- List of buttons to try and click
--- 	"StaticPopup1Button1",
--- 	"QuestFrameCompleteButton",
--- 	"QuestFrameCompleteQuestButton",
--- 	"QuestFrameAcceptButton",
--- 	"GossipTitleButton1",
--- 	"QuestTitleButton1"
--- }
-
--- DialogKey.scrollFrames = {						-- List of quest frames to try and scroll
--- QuestDetailScrollFrame,
--- QuestLogPopupDetailFrameScrollFrame,
--- QuestMapDetailsScrollFrame,
--- ClassicQuestLogDetailScrollFrame
--- }
-
+-- confirmed still broken as of 10.0.0
 DialogKey.builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
 	"Are you sure you want to go back to Shal'Aran?", -- Seems to bug out and not work if an AddOn clicks the confirm button?
 }
@@ -46,13 +28,9 @@ function DialogKey:OnInitialize()
 	-- TODO: re-enable AceDB once options panel is fixed
 	-- self.db = LibStub("AceDB-3.0"):New("DialogKeyDB", defaults, true)
 	self.db = defaults
-
 	-- self.keybindMode = false -- TODO: reimplement keybinding w/ options update
 	-- self.keybindIndex = 0
 	-- self.recentlyPressed = false -- TODO: reimplement "recently pressed" keyboard propogation delay
-	self.combatLockdown = false
-
-	self.frame = CreateFrame("Frame", "DialogKeyFrame", UIParent)
 
 	self.glowFrame = CreateFrame("Frame", "DialogKeyGlow", UIParent)
 	self.glowFrame:SetPoint("CENTER", 0, 0)
@@ -64,27 +42,20 @@ function DialogKey:OnInitialize()
 	self.glowFrame.tex:SetAllPoints()
 	self.glowFrame.tex:SetColorTexture(1,1,0,0.5)
 
+	self.frame = CreateFrame("Frame", "DialogKeyFrame", UIParent)
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
-
-	self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-	self.frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
-	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
+	self.frame:RegisterEvent("QUEST_FINISHED")
 	self.frame:SetScript("OnEvent", function(__, event, ...)
-		-- DialogKey just breaks during combat lockdown, so let's unhook OnKeyDown and disable rehooking it until combat ends
-		if (event == "QUEST_GREETING") then
-			self.EnumerateGossips_Quest()
-		elseif (event == "GOSSIP_SHOW") then
-			self.EnumerateGossips_Options()
-		elseif (event == "PLAYER_REGEN_DISABLED") then
-			self.frame:SetScript("OnKeyDown", nil)
-			self.combatLockdown = true
-		elseif (event == "PLAYER_REGEN_ENABLED") then
-			self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
-			self.combatLockdown = false
+		if event == "QUEST_FINISHED" then
+			DialogKey.itemChoice = -1
+		else
+			self:EnumerateGossips( event == "GOSSIP_SHOW" )
 		end
 	end);
+
+	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
+	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
@@ -96,15 +67,60 @@ end
 local function ignoreInput()
 	DialogKey.frame:SetPropagateKeyboardInput(true)
 	-- TODO: ignore input while setting keybinds
-	if GetCurrentKeyBoardFocus() then return true end -- Ignore input while typing
-	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible() then return true end -- Ignore input if GossipFrame isn't visible
+
+	-- Ignore input while typing, unless at the Send Mail confirmation while typing into it!
+	local focus = GetCurrentKeyBoardFocus()
+	if focus and not (StaticPopup1:IsVisible() and (focus:GetName() == "SendMailNameEditBox" or focus:GetName() == "SendMailSubjectEditBox")) then return true end 
+
+	-- Ignore input if there's something for DialogKey to click
+	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible() then return true end
 
 	return false
 end
 
 -- Primary functions --
 
--- OnKeyDown handler for GOSSIP_SHOW event
+-- Takes a global string like '%s has challenged you to a duel.' and converts it to a format suitable for string.find
+local summon_match = CONFIRM_SUMMON:gsub("%%s", ".+"):gsub("%%d", ".+")
+local duel_match = DUEL_REQUESTED:gsub("%%s",".+")
+local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
+local function getPopupButton()
+	-- Don't accept summons/duels/resurrects if the options are enabled
+	if DialogKey.db.global.dontClickSummons and StaticPopup1Text:GetText():find(summon_match) then return end
+	if DialogKey.db.global.dontClickDuels and StaticPopup1Text:GetText():find(duel_match) then return end
+
+	-- If resurrect dialog has three buttons, and the option is enabled, use the middle one instead of the first one (soulstone, etc.)
+	-- Located before resurrect/release checks/returns so it happens even if you have releases/revives disabled
+	-- Also, Check if Button2 is visible instead of Button3 since Recap is always 3; 2 is hidden if you can't soulstone rez	
+	
+	-- the ordering here means that a revive will be taken before a battle rez before a release.
+	-- if revives are disabled but soulstone battlerezzes *aren't*, nothing will happen if both are available!
+	-- (originall DialogKey worked this way too, comment if you think this should be changed!)
+	local canRelease = StaticPopup1Button1Text:GetText() == DEATH_RELEASE
+	if DialogKey.db.global.useSoulstoneRez and canRelease and StaticPopup1Button2:IsVisible() then
+		return StaticPopup1Button2
+	end
+
+	if DialogKey.db.global.dontClickRevives and (StaticPopup1Text:GetText() == RECOVER_CORPSE or StaticPopup1Text:GetText():find(resurrect_match)) then return end
+	if DialogKey.db.global.dontClickReleases and canRelease then return end
+
+	-- Ignore blacklisted popup dialogs!
+	local dialog = StaticPopup1Text:GetText():lower()
+	for _, text in pairs(DialogKey.db.global.dialogBlacklist) do
+		if dialog:find(text:lower()) then return end
+	end
+
+	for _, text in pairs(DialogKey.builtinDialogBlacklist) do
+		if dialog:find(text:lower()) then
+			DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
+			DialogKey:Glow(DEFAULT_CHAT_FRAME)
+			return
+		end
+	end
+
+	return StaticPopup1Button1
+end
+
 function DialogKey:HandleKey(key)
 	if ignoreInput() then return end
 
@@ -115,90 +131,85 @@ function DialogKey:HandleKey(key)
 	if doAction then
 
 		-- Click Popup
+		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
 		if StaticPopup1:IsVisible() then
-			-- Case: Soulstone or Reincarn
-			if StaticPopup1Button3 then --and StaticPopup1Button1:GetText() == "Release Spirit" then
-				StaticPopup1Button2:Click()
-				DialogKey:Glow(StaticPopup1Button2, "click")
+			button = getPopupButton()
+			if button and (button:IsEnabled() or not DialogKey.db.global.ignoreDisabledButtons) then
 				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(button)
+				button:Click()
 				return
-			elseif StaticPopup1Button1:IsEnabled() then
-				DialogKey:Glow(StaticPopup1Button1, "click")
-				StaticPopup1Button1:Click()
-				DialogKey.frame:SetPropagateKeyboardInput(false)
-			-- Click second button when first is disabled
-			else
-				DialogKey:Glow(StaticPopup1Button2, "click")
-				StaticPopup1Button2:Click()
-				DialogKey.frame:SetPropagateKeyboardInput(false)
 			end
-			return
-		-- TurnIn Quest
-		elseif QuestFrameProgressPanel:IsVisible() then
+		end
+
+		-- Complete Quest
+		if QuestFrameProgressPanel:IsVisible() then
+			if not QuestFrameCompleteButton:IsEnabled() and DialogKey.db.global.ignoreDisabledButtons then return end
 			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey:Glow(QuestFrameCompleteButton , "click")
+			DialogKey:Glow(QuestFrameCompleteButton)
 			CompleteQuest()
+			return
 
 		-- Accept Quest
 		elseif QuestFrameDetailPanel:IsVisible() then
-			DialogKey:Glow(QuestFrameAcceptButton , "click")
-			AcceptQuest()
 			DialogKey.frame:SetPropagateKeyboardInput(false)
+			DialogKey:Glow(QuestFrameAcceptButton)
+			AcceptQuest()
+			return
 
-		-- Complete Quest
+		-- Take Quest Reward
 		elseif QuestFrameRewardPanel:IsVisible() then
 			DialogKey.frame:SetPropagateKeyboardInput(false)
 			if DialogKey.itemChoice == -1 and GetNumQuestChoices() > 0 then
 				QuestChooseRewardError()
 			else
-				DialogKey:Glow(QuestFrameCompleteQuestButton , "click")
+				DialogKey:Glow(QuestFrameCompleteQuestButton)
 				GetQuestReward(DialogKey.itemChoice)
-			end	
+			end
+			return
 		end
 	end
 
 	-- GossipFrame
-	if GossipFrame.GreetingPanel:IsVisible() then
-		while keynum and keynum > 0 and keynum <= #DialogKey.frames and DialogKey.db.global.numKeysForGossip do
+	if (doAction or DialogKey.db.global.numKeysForGossip) and GossipFrame.GreetingPanel:IsVisible() then
+		while keynum and keynum > 0 and keynum <= #DialogKey.frames do
 			choice = DialogKey.frames[keynum].GetElementData()
 			-- Skip grey quest (active but not completed) when pressing DialogKey
-			if choice.info.questID and choice.activeQuestButton and not choice.info.isComplete and doAction then
+			if doAction and choice.info.questID and choice.activeQuestButton and not choice.info.isComplete and DialogKey.db.global.ignoreDisabledButtons then
 				keynum = keynum + 1
 			else
-				DialogKey.frames[keynum]:Click()
-				DialogKey:Glow(DialogKey.frames[keynum], "click")
 				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(DialogKey.frames[keynum])
+				DialogKey.frames[keynum]:Click()
 				return
 			end
 		end
 	end
 
 	-- QuestFrame
-	if QuestFrameGreetingPanel:IsVisible() then
+	if (doAction or DialogKey.db.global.numKeysForGossip) and QuestFrameGreetingPanel:IsVisible()  then
 		while keynum and keynum > 0 and keynum <= #DialogKey.frames do
 			local title, is_complete = GetActiveTitle(keynum)
-			if doAction and not is_complete and DialogKey.frames[keynum].frame.isActive == 1 then
+			if doAction and not is_complete and DialogKey.frames[keynum].isActive == 1 and DialogKey.db.global.ignoreDisabledButtons then
 				keynum = keynum + 1
 				if keynum > #DialogKey.frames then
 					doAction = false
 					keynum = 1
 				end
 			else
-				DialogKey:Glow(DialogKey.frames[keynum].frame, "click")
-				DialogKey.frames[keynum].frame:Click()
 				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(DialogKey.frames[keynum])
+				DialogKey.frames[keynum]:Click()
 				return
 			end
 		end	
 	end
 
 	-- QuestReward Frame (select item)
-	if QuestFrameCompleteQuestButton:IsVisible() then
-		if GetQuestItemInfo("choice", numkey) then
-			DialogKey.itemChoice = numkey
-			GetClickFrame("QuestInfoRewardsFrameQuestInfoItem"..key):Click()
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-		end
+	if DialogKey.db.global.numKeysForQuestRewards and keynum and keynum <= GetNumQuestChoices() and QuestFrameCompleteQuestButton:IsVisible() then
+		DialogKey.frame:SetPropagateKeyboardInput(false)
+		DialogKey.itemChoice = keynum
+		GetClickFrame("QuestInfoRewardsFrameQuestInfoItem" .. key):Click()
 	end
 end
 
@@ -213,79 +224,49 @@ function DialogKey:SelectItemReward()
 	end
 end
 
-function DialogKey:GetGossipButtons()
-	local frames = {}
-	for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
+-- Prefix list of Gossip/Quest options with 1., 2., 3. etc.
+-- Also builds DialogKey.frames, used to click said options
+function DialogKey:EnumerateGossips( isGossipFrame )
+	if not ( QuestFrameGreetingPanel:IsVisible() or GossipFrame.GreetingPanel:IsVisible() ) then return end
+
+	-- If anyone reading this comment is or knows someone on the WoW UI team, please send them this Addon and
+	--   show them this function and then please ask them to (politely) slap whoever decided that:
+	--   (1) ObjectPool's `activeObjects` *had* to be a dictionary
+	--   (2) :GetChildren() should return an unpacked list of the sub-objects instead of, you know, a Table.
+	--   :)
+	-- FuriousProgrammer
+	local tab
+	if isGossipFrame then
+		tab = {}
+		for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
+			tab[v] = true
+		end
+	else
+		tab = QuestFrameGreetingPanel.titleButtonPool.activeObjects
+		-- _, tab = QuestFrameGreetingPanel.titleButtonPool:EnumerateActive()
+	end
+
+	DialogKey.frames = {}
+	for v in next, tab do
 		if v:GetObjectType() == "Button" and v:IsVisible() then
-			table.insert(frames, v)
+			table.insert(DialogKey.frames, v)
 		end
 	end
-	table.sort(frames, function(a, b) return a:GetTop() > b:GetTop() end)
-	return frames
-end
 
-function DialogKey:EnumerateGossips_Options()		-- Prefixes 1., 2., etc. to NPC options
-	if not DialogKey.db.global.numKeysForGossip then return end
-	if not GossipFrame.GreetingPanel:IsVisible() then return end
+	table.sort(DialogKey.frames, function(a,b) return a:GetTop() > b:GetTop() end)
 
-	DialogKey.frames = DialogKey:GetGossipButtons()
-	local num = 1
-	for i=1,#DialogKey.frames do
-		local frame = DialogKey.frames[i]
-		if frame:IsVisible() and frame:GetText() then
-			if not frame:GetText():find("^"..num.."\. ") then
-				frame:SetText(num .. ". " .. frame:GetText())
-			end
-			num = num+1
-		end
-	end
-end
-
-function DialogKey:GetQuestButtons()
-	local frames = {}
-	for f,unknown in QuestFrameGreetingPanel.titleButtonPool:EnumerateActive() do
-		table.insert(frames, f)
-	end
-	
-	table.sort(frames, function(a,b) return a.GetTop() > b.GetTop() end)
-	return frames
-end
-
-function DialogKey:EnumerateGossips_Quest()		-- Prefixes 1., 2., etc. to NPC options
-	if not DialogKey.db.global.numKeysForGossip then return end
-	if not QuestFrameGreetingPanel:IsVisible() then return end
-
-	DialogKey.frames = DialogKey:GetQuestButtons()
-	local num = 1
-	for i,f in pairs(DialogKey.frames) do
-		local frame = f.frame
-		if frame:IsVisible() and frame:GetText() then
-			if not frame:GetText():find("^"..num.."\. ") then
-				frame:SetText(num .. ". " .. frame:GetText())
-			end
-			num = num+1
+	if DialogKey.db.global.numKeysForGossip then
+		for i, frame in ipairs(DialogKey.frames) do
+			frame:SetText(i .. ". " .. frame:GetText())
 		end
 	end
 end
 
 -- Glow Functions --
--- Show the glow frame over a frame. Mode is "click", "add", or "remove"
 function DialogKey:Glow(frame, mode)
-	if mode == "click" then
-		if DialogKey.db.global.showGlow then
-			self.glowFrame:SetAllPoints(frame)
-			self.glowFrame.tex:SetColorTexture(1,1,0,0.5)
-			self.glowFrame:Show()
-			self.glowFrame:SetAlpha(1)
-		end
-	elseif mode == "add" then
+	if DialogKey.db.global.showGlow then
 		self.glowFrame:SetAllPoints(frame)
-		self.glowFrame.tex:SetColorTexture(0,1,0,0.5)
-		self.glowFrame:Show()
-		self.glowFrame:SetAlpha(1)
-	elseif mode == "remove" then
-		self.glowFrame:SetAllPoints(frame)
-		self.glowFrame.tex:SetColorTexture(1,0,0,0.5)
+		self.glowFrame.tex:SetColorTexture(1,1,0,0.5)
 		self.glowFrame:Show()
 		self.glowFrame:SetAlpha(1)
 	end
@@ -301,7 +282,7 @@ function DialogKey:GlowFrameUpdate(delta)
 	if self:GetAlpha() <= 0 then self:Hide() end
 end
 
-function DialogKey:print(message,msgType)
+function DialogKey:print(message)
 	DEFAULT_CHAT_FRAME:AddMessage("|cffd2b48c[DialogKey]|r "..message.."|r")
 end
 
