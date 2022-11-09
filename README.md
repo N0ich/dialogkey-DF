@@ -15,7 +15,6 @@ https://github.com/TonyRaccoon/wow-dialogkey
 https://github.com/Kayakflo/wow-dialogkey
 
 # Known Issues / Missing Features
-- Popup Dialogs (e.g. delete confirmations, resurrections, release spirit, etc.) do not currently get clicked by the addon.
-- Gossip choices are occasionally selected incorrectly. (E.g. pressing '2' selects option marked '3', etc.)
 - No in-game configuration options are currently available.
 - Post-click cooldown/lockout option is currently unimplemented.
+- When multiple Popup Dialogs are on-screen, only the first one (the topmost one) is considered.
