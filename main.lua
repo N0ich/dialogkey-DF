@@ -3,7 +3,7 @@ DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey")
 local defaults = {
 	global = {
 		keys = {
-			"F",
+			"SPACE",
 		},
 		ignoreDisabledButtons = true,
 		showGlow = true,
