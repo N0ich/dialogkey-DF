@@ -57,7 +57,6 @@ function DialogKey:OnInitialize()
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 
-
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
 	self.frame:SetPropagateKeyboardInput(true)
