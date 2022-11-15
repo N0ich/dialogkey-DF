@@ -126,7 +126,9 @@ function DialogKey:HandleKey(key)
 
 	local doAction = (key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2])
 	local keynum = doAction and 1 or tonumber(key)
-
+	if key == "0" then
+		keynum = 10
+	end
 	-- DialogKey pressed, interact with popups, accepts..
 	if doAction then
 
@@ -202,7 +204,7 @@ function DialogKey:HandleKey(key)
 				DialogKey.frames[keynum]:Click()
 				return
 			end
-		end	
+		end
 	end
 
 	-- QuestReward Frame (select item)
@@ -257,7 +259,14 @@ function DialogKey:EnumerateGossips( isGossipFrame )
 
 	if DialogKey.db.global.numKeysForGossip then
 		for i, frame in ipairs(DialogKey.frames) do
-			frame:SetText(i .. ". " .. frame:GetText())
+			if i > 10 then
+				break
+			end
+			if i == 10 then
+				frame:SetText("0" .. ". " .. frame:GetText())
+			else
+				frame:SetText(i .. ". " .. frame:GetText())
+			end
 		end
 	end
 end
