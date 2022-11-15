@@ -48,7 +48,7 @@ function DialogKey:OnInitialize()
 	self.frame:RegisterEvent("QUEST_COMPLETE")
 	self.frame:SetScript("OnEvent", function(__, event, ...)
 		if event == "QUEST_COMPLETE" then
-			DialogKey.itemChoice = -1
+			DialogKey.itemChoice = (GetNumQuestChoices() > 1 and -1 or 1)
 		else
 			self:EnumerateGossips( event == "GOSSIP_SHOW" )
 		end
@@ -166,7 +166,7 @@ function DialogKey:HandleKey(key)
 				QuestChooseRewardError()
 			else
 				DialogKey:Glow(QuestFrameCompleteQuestButton)
-				GetQuestReward(GetNumQuestChoices() and 1 or DialogKey.itemChoice)
+				GetQuestReward(DialogKey.itemChoice)
 			end
 			return
 		end
