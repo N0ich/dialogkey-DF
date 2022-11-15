@@ -45,9 +45,9 @@ function DialogKey:OnInitialize()
 	self.frame = CreateFrame("Frame", "DialogKeyFrame", UIParent)
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
-	self.frame:RegisterEvent("QUEST_FINISHED")
+	self.frame:RegisterEvent("QUEST_COMPLETE")
 	self.frame:SetScript("OnEvent", function(__, event, ...)
-		if event == "QUEST_FINISHED" then
+		if event == "QUEST_COMPLETE" then
 			DialogKey.itemChoice = -1
 		else
 			self:EnumerateGossips( event == "GOSSIP_SHOW" )
@@ -126,7 +126,9 @@ function DialogKey:HandleKey(key)
 
 	local doAction = (key == DialogKey.db.global.keys[1] or key == DialogKey.db.global.keys[2])
 	local keynum = doAction and 1 or tonumber(key)
-
+	if key == "0" then
+		keynum = 10
+	end
 	-- DialogKey pressed, interact with popups, accepts..
 	if doAction then
 
@@ -160,11 +162,11 @@ function DialogKey:HandleKey(key)
 		-- Take Quest Reward
 		elseif QuestFrameRewardPanel:IsVisible() then
 			DialogKey.frame:SetPropagateKeyboardInput(false)
-			if DialogKey.itemChoice == -1 and GetNumQuestChoices() > 0 then
+			if DialogKey.itemChoice == -1 and GetNumQuestChoices() > 1 then
 				QuestChooseRewardError()
 			else
 				DialogKey:Glow(QuestFrameCompleteQuestButton)
-				GetQuestReward(DialogKey.itemChoice)
+				GetQuestReward(GetNumQuestChoices() and 1 or DialogKey.itemChoice)
 			end
 			return
 		end
@@ -202,11 +204,11 @@ function DialogKey:HandleKey(key)
 				DialogKey.frames[keynum]:Click()
 				return
 			end
-		end	
+		end
 	end
 
 	-- QuestReward Frame (select item)
-	if DialogKey.db.global.numKeysForQuestRewards and keynum and keynum <= GetNumQuestChoices() and QuestFrameCompleteQuestButton:IsVisible() then
+	if DialogKey.db.global.numKeysForQuestRewards and keynum and keynum <= GetNumQuestChoices() and QuestFrameRewardPanel:IsVisible() then
 		DialogKey.frame:SetPropagateKeyboardInput(false)
 		DialogKey.itemChoice = keynum
 		GetClickFrame("QuestInfoRewardsFrameQuestInfoItem" .. key):Click()
@@ -226,7 +228,7 @@ end
 
 -- Prefix list of Gossip/Quest options with 1., 2., 3. etc.
 -- Also builds DialogKey.frames, used to click said options
-function DialogKey:EnumerateGossips( isGossipFrame )
+function DialogKey:EnumerateGossips(isGossipFrame)
 	if not ( QuestFrameGreetingPanel:IsVisible() or GossipFrame.GreetingPanel:IsVisible() ) then return end
 
 	-- If anyone reading this comment is or knows someone on the WoW UI team, please send them this Addon and
@@ -257,7 +259,14 @@ function DialogKey:EnumerateGossips( isGossipFrame )
 
 	if DialogKey.db.global.numKeysForGossip then
 		for i, frame in ipairs(DialogKey.frames) do
-			frame:SetText(i .. ". " .. frame:GetText())
+			if i > 10 then
+				break
+			end
+			if i == 10 then
+				frame:SetText("0" .. ". " .. frame:GetText())
+			else
+				frame:SetText(i .. ". " .. frame:GetText())
+			end
 		end
 	end
 end
@@ -287,7 +296,7 @@ function DialogKey:print(message)
 end
 
 -- Recursively print a table
-function DialogKey:print_r ( t )
+function DialogKey:print_r (t)
     local print_r_cache={}
     local function sub_print_r(t,indent)
         if (print_r_cache[tostring(t)]) then
