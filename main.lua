@@ -15,6 +15,7 @@ local defaults = {
 		dontClickRevives = false,
 		dontClickReleases = false,
 		useSoulstoneRez = true,
+		dontAcceptInvite = false,
 		-- keyCooldown = 0.5
 	}
 }
@@ -86,7 +87,12 @@ end
 local summon_match = CONFIRM_SUMMON:gsub("%%s", ".+"):gsub("%%d", ".+")
 local duel_match = DUEL_REQUESTED:gsub("%%s",".+")
 local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
+local groupinvite_match = INVITATION:gsub("%%s", ".+")
+
 local function getPopupButton()
+	-- Don't accept group invitations if the option is enabled
+	if DialogKey.db.global.dontAcceptInvite and StaticPopup1Text:GetText():find(groupinvite_match) then return end
+
 	-- Don't accept summons/duels/resurrects if the options are enabled
 	if DialogKey.db.global.dontClickSummons and StaticPopup1Text:GetText():find(summon_match) then return end
 	if DialogKey.db.global.dontClickDuels and StaticPopup1Text:GetText():find(duel_match) then return end
