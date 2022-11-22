@@ -15,13 +15,16 @@ local defaults = {
 		dontClickRevives = false,
 		dontClickReleases = false,
 		useSoulstoneRez = true,
+		dontAcceptInvite = false,
 		-- keyCooldown = 0.5
 	}
 }
 
 -- confirmed still broken as of 10.0.0
 DialogKey.builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
-	"Are you sure you want to go back to Shal'Aran?", -- Seems to bug out and not work if an AddOn clicks the confirm button?
+	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
+	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
+	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 }
 
 function DialogKey:OnInitialize()
@@ -84,7 +87,12 @@ end
 local summon_match = CONFIRM_SUMMON:gsub("%%s", ".+"):gsub("%%d", ".+")
 local duel_match = DUEL_REQUESTED:gsub("%%s",".+")
 local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
+local groupinvite_match = INVITATION:gsub("%%s", ".+")
+
 local function getPopupButton()
+	-- Don't accept group invitations if the option is enabled
+	if DialogKey.db.global.dontAcceptInvite and StaticPopup1Text:GetText():find(groupinvite_match) then return end
+
 	-- Don't accept summons/duels/resurrects if the options are enabled
 	if DialogKey.db.global.dontClickSummons and StaticPopup1Text:GetText():find(summon_match) then return end
 	if DialogKey.db.global.dontClickDuels and StaticPopup1Text:GetText():find(duel_match) then return end
@@ -112,9 +120,7 @@ local function getPopupButton()
 
 	for _, text in pairs(DialogKey.builtinDialogBlacklist) do
 		if dialog:find(text:lower()) then
-			DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
-			DialogKey:Glow(DEFAULT_CHAT_FRAME)
-			return
+			return nil, true
 		end
 	end
 
@@ -135,21 +141,31 @@ function DialogKey:HandleKey(key)
 		-- Click Popup
 		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
 		if StaticPopup1:IsVisible() then
-			button = getPopupButton()
+			button, builtinBlacklist = getPopupButton()
 			if button and (button:IsEnabled() or not DialogKey.db.global.ignoreDisabledButtons) then
 				DialogKey.frame:SetPropagateKeyboardInput(false)
 				DialogKey:Glow(button)
 				button:Click()
+				return
+			elseif builtinBlacklist then -- anything not intentionally blacklisted by the user should always consume the input
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
+				DialogKey:Glow(DEFAULT_CHAT_FRAME)
 				return
 			end
 		end
 
 		-- Complete Quest
 		if QuestFrameProgressPanel:IsVisible() then
-			if not QuestFrameCompleteButton:IsEnabled() and DialogKey.db.global.ignoreDisabledButtons then return end
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey:Glow(QuestFrameCompleteButton)
-			CompleteQuest()
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+			if not QuestFrameCompleteButton:IsEnabled() and DialogKey.db.global.ignoreDisabledButtons then
+				-- click "Cencel" button when "Complete" is disabled on progress panel
+				DialogKey:Glow(QuestFrameGoodbyeButton)
+				CloseQuest()
+			else
+				DialogKey:Glow(QuestFrameCompleteButton)
+				CompleteQuest()
+			end
 			return
 
 		-- Accept Quest
