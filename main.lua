@@ -157,10 +157,15 @@ function DialogKey:HandleKey(key)
 
 		-- Complete Quest
 		if QuestFrameProgressPanel:IsVisible() then
-			if not QuestFrameCompleteButton:IsEnabled() and DialogKey.db.global.ignoreDisabledButtons then return end
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey:Glow(QuestFrameCompleteButton)
-			CompleteQuest()
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+			if not QuestFrameCompleteButton:IsEnabled() and DialogKey.db.global.ignoreDisabledButtons then
+				-- click "Cencel" button when "Complete" is disabled on progress panel
+				DialogKey:Glow(QuestFrameGoodbyeButton)
+				CloseQuest()
+			else
+				DialogKey:Glow(QuestFrameCompleteButton)
+				CompleteQuest()
+			end
 			return
 
 		-- Accept Quest
