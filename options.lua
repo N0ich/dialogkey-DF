@@ -107,7 +107,7 @@ interfaceOptions = {
 		useSoulstoneRez = {
 			order = 14,
 			name = "|cffffd100Use Class-specific Revive|r",
-			desc = "Use Soulstone/Ankh/etc. resurrection option when available and a normal revive is not\nThis option |cffff0000ignores|r the Don't Accept Revives option!"
+			desc = "Use Soulstone/Ankh/etc. resurrection option when available and a normal revive is not\nThis option |cffff0000ignores|r the Don't Accept Revives option!",
 			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 		};
 		
