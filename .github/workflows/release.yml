@@ -7,7 +7,7 @@ jobs:
     release:
         runs-on: ubuntu-latest
         env:
-            GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+            GITHUB_OAUTH: ${{ secrets.GH_TOKEN }}
         steps:
             - name: Clone project
               uses: actions/checkout@v2
