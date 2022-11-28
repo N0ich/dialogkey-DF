@@ -1,38 +1,16 @@
 DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey")
 
-local defaults = {
-	global = {
-		keys = {
-			"SPACE",
-		},
-		ignoreDisabledButtons = false,
-		showGlow = true,
-		dialogBlacklist = {},
-		numKeysForGossip = true,
-		numKeysForQuestRewards = true,
-		dontClickSummons = false,
-		dontClickDuels = false,
-		dontClickRevives = false,
-		dontClickReleases = false,
-		useSoulstoneRez = true,
-		dontAcceptInvite = false,
-		-- keyCooldown = 0.5
-	}
-}
-
--- confirmed still broken as of 10.0.0
-DialogKey.builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
+-- confirmed still broken as of 10.0.2
+builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 }
 
 function DialogKey:OnInitialize()
-	-- TODO: re-enable AceDB once options panel is fixed
-	-- self.db = LibStub("AceDB-3.0"):New("DialogKeyDB", defaults, true)
-	self.db = defaults
-	-- self.keybindMode = false -- TODO: reimplement keybinding w/ options update
-	-- self.keybindIndex = 0
+	-- defaultOptions defined in `options.lua`
+	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
+	
 	-- self.recentlyPressed = false -- TODO: reimplement "recently pressed" keyboard propogation delay
 
 	self.glowFrame = CreateFrame("Frame", "DialogKeyGlow", UIParent)
@@ -63,13 +41,16 @@ function DialogKey:OnInitialize()
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
 	self.frame:SetPropagateKeyboardInput(true)
+
+	-- interfaceOptions defined in `options.lua`
+	LibStub("AceConfig-3.0"):RegisterOptionsTable("DialogKey", interfaceOptions)
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("DialogKey")
 end
 
 -- Internal/Private Functions --
 
 local function ignoreInput()
 	DialogKey.frame:SetPropagateKeyboardInput(true)
-	-- TODO: ignore input while setting keybinds
 
 	-- Ignore input while typing, unless at the Send Mail confirmation while typing into it!
 	local focus = GetCurrentKeyBoardFocus()
@@ -118,7 +99,7 @@ local function getPopupButton()
 		if dialog:find(text:lower()) then return end
 	end
 
-	for _, text in pairs(DialogKey.builtinDialogBlacklist) do
+	for _, text in pairs(builtinDialogBlacklist) do
 		if dialog:find(text:lower()) then
 			return nil, true
 		end
