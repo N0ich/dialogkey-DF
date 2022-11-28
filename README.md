@@ -15,6 +15,6 @@ https://github.com/TonyRaccoon/wow-dialogkey
 https://github.com/Kayakflo/wow-dialogkey
 
 # Known Issues / Missing Features
-- No in-game configuration options are currently available.
+- Some actions during combat lockdown cause DialogKey to error!
 - Post-click cooldown/lockout option is currently unimplemented.
 - When multiple Popup Dialogs are on-screen, only the first one (the topmost one) is considered.
