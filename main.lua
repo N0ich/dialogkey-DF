@@ -5,6 +5,7 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
+	END_BOUND_TRADEABLE,
 }
 
 function DialogKey:OnInitialize()
