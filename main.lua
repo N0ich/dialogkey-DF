@@ -8,6 +8,29 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	END_BOUND_TRADEABLE,
 }
 
+-- Thanks, [github]@mbattersby
+-- Prefix list of GossipFrame(!!) options with 1., 2., 3. etc.
+local function GossipDataProviderHook(frame)
+	local dp = frame.GreetingPanel.ScrollBox:GetDataProvider()
+
+	if DialogKey.db.global.numKeysForGossip then
+		local n = 1
+		for _, item in ipairs(dp.collection) do
+			if item.buttonType == GOSSIP_BUTTON_TYPE_OPTION then
+				item.info.name = n%10 .. ". " .. item.info.name
+				n = n + 1
+			elseif item.buttonType == GOSSIP_BUTTON_TYPE_ACTIVE_QUEST or
+				   item.buttonType == GOSSIP_BUTTON_TYPE_AVAILABLE_QUEST then
+				item.info.title = n%10 .. ". " .. item.info.title
+				n = n + 1
+			end
+			if n > 10 then break end
+		end
+	end
+
+	frame.GreetingPanel.ScrollBox:SetDataProvider(dp)
+end
+
 function DialogKey:OnInitialize()
 	if IsAddOnLoaded("Immersion") then
 		self:print("Immersion AddOn detected.")
@@ -44,6 +67,8 @@ function DialogKey:OnInitialize()
 
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
+
+	hooksecurefunc(GossipFrame, "Update", GossipDataProviderHook) -- Thanks, [github]@mbattersby
 
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
@@ -230,7 +255,7 @@ function DialogKey:SelectItemReward()
 	end
 end
 
--- Prefix list of Gossip/Quest options with 1., 2., 3. etc.
+-- Prefix list of QuestGreetingFrame(!!) options with 1., 2., 3. etc.
 -- Also builds DialogKey.frames, used to click said options
 function DialogKey:EnumerateGossips(isGossipFrame)
 	if not ( QuestFrameGreetingPanel:IsVisible() or GossipFrame.GreetingPanel:IsVisible() ) then return end
@@ -261,7 +286,7 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 
 	table.sort(DialogKey.frames, function(a,b) return a:GetOrderIndex() < b:GetOrderIndex() end)
 
-	if DialogKey.db.global.numKeysForGossip then
+	if DialogKey.db.global.numKeysForGossip and not isGossipFrame then
 		for i, frame in ipairs(DialogKey.frames) do
 			if i > 10 then break end
 			frame:SetText(i%10 .. ". " .. frame:GetText())
