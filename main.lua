@@ -257,14 +257,11 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 
 	if DialogKey.db.global.numKeysForGossip then
 		for i, frame in ipairs(DialogKey.frames) do
-			if i > 10 then
-				break
-			end
-			if i == 10 then
-				frame:SetText("0" .. ". " .. frame:GetText())
-			else
-				frame:SetText(i .. ". " .. frame:GetText())
-			end
+			if i > 10 then break end
+			frame:SetText(i%10 .. ". " .. frame:GetText())
+
+			-- Make the button taller if the text inside is wrapped to multiple lines
+			frame:SetHeight(frame:GetFontString():GetHeight()+2)
 		end
 	end
 end
