@@ -284,7 +284,13 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 		end
 	end
 
-	table.sort(DialogKey.frames, function(a,b) return a:GetOrderIndex() < b:GetOrderIndex() end)
+	table.sort(DialogKey.frames, function(a,b) 
+		if a.GetOrderIndex then
+			return a:GetOrderIndex() < b:GetOrderIndex()
+		else
+			return a:GetTop() > b:GetTop()
+		end
+	end)
 
 	if DialogKey.db.global.numKeysForGossip and not isGossipFrame then
 		for i, frame in ipairs(DialogKey.frames) do
