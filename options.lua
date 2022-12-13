@@ -18,8 +18,9 @@ defaultOptions = {
 	}
 }
 
-local function optionSetter(info, val) DialogKey.db.global[info[1]] = val end
-local function optionGetter(info) return DialogKey.db.global[info[1]] end
+-- Using #info here so that the option toggles/buttons/etc can be placed anywhere in the tree below and correctly update the option above via name matching.
+local function optionSetter(info, val) DialogKey.db.global[info[#info]] = val end
+local function optionGetter(info) return DialogKey.db.global[info[#info]] end
 
 -- BIG Todo: Localization options!!
 interfaceOptions = {
@@ -45,90 +46,121 @@ interfaceOptions = {
 			get = (function(info) return DialogKey.db.global.keys[2] end),
 		};
 
+
 		header2 = {
 			order = 4,
 			name = "Options",
 			type = "header",
 		};
-		showGlow = {
-			order = 5,
-			name = "|cffffd100Enable Glow|r",
-			desc = "Show the glow effect when DialogKey clicks a button",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter, -- TODO figure out how to get these to inherit?
+		subgroup1 = {
+			order = 1,
+			name = "General",
+			desc = "Basic Options for personal preferences",
+			type = "group",
+			args = {
+				showGlow = {
+					order = 1,
+					name = "|cffffd100Enable Glow|r",
+					desc = "Show the glow effect when DialogKey clicks a button",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter, -- TODO figure out how to get these to inherit?
+				};
+				numKeysForGossip = {
+					order = 2,
+					name = "|cffffd100Numkeys for Gossip|r",
+					desc = "Use the number keys (1 thru 0) to select Gossip options or Quests from an NPC dialog window",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				numKeysForQuestRewards = {
+					order = 3,
+					name = "|cffffd100Numkeys for Quest Rewards|r",
+					desc = "Use the number keys (1 thru 0) to select Quest rewards when multiple are available",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontAcceptInvite = {
+					order = 4,
+					name = "|cffffd100Don't Accept Group Invites|r",
+					desc = "Don't allow DialogKey to accept Raid/Party Invitations",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontClickSummons = {
+					order = 5,
+					name = "|cffffd100Don't Accept Summons|r",
+					desc = "Don't allow DialogKey to accept Summon Requests",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontClickDuels = {
+					order = 6,
+					name = "|cffffd100Don't Accept Duels|r",
+					desc = "Don't allow DialogKey to accept Duel Requests",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontClickRevives = {
+					order = 7,
+					name = "|cffffd100Don't Accept Revives|r",
+					desc = "Don't allow DialogKey to accept Resurrections",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontClickReleases = {
+					order = 8,
+					name = "|cffffd100Don't Release Spirit|r",
+					desc = "Don't allow DialogKey to Release Spirit",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				useSoulstoneRez = {
+					order = 9,
+					name = "|cffffd100Use Class-specific Revive|r",
+					desc = "Use Soulstone/Ankh/etc. resurrection option when one is available and a normal/battle resurrection is not\n\nThis option |cffff0000ignores|r the |cffffd100Don't Accept Revives|r option!",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+			}
 		};
-		ignoreDisabledButtons = {
-			order = 6,
-			name = "|cffffd100Ignore Disabled Buttons|r",
-			desc = "Don't allow DialogKey to click on disabled (greyed out) buttons",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+		subgroup2 = {
+			order = 2,
+			name = "Priority",
+			desc = "Advanced Options to control DialogKey button priority",
+			type = "group",
+			args = {
+				ignoreDisabledButtons = {
+					order = 1,
+					name = "|cffffd100Ignore Disabled Buttons|r",
+					desc = "Don't allow DialogKey to click on disabled (greyed out) buttons",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				temp = {
+					order = 2,
+					name = "=== Advanced Priority Customization NYI ===",
+					type = "description",
+					fontSize = "medium",
+				};
+			}
 		};
-		numKeysForGossip = {
-			order = 7,
-			name = "|cffffd100Numkeys for Gossip|r",
-			desc = "Use the number keys (1 thru 0) to select Gossip options or Quests from an NPC dialog window",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+		subgroup3 = {
+			order = 3,
+			name = "Custom Watchlist",
+			desc = "List of custom buttons for DialogKey to attempt to click",
+			type = "group",
+			args = {
+				temp = {
+					order = 1,
+					name = "=== Custom Watchlist NYI ===",
+					type = "description",
+					fontSize = "medium",
+				};
+			}
 		};
-		numKeysForQuestRewards = {
-			order = 8,
-			name = "|cffffd100Numkeys for Quest Rewards|r",
-			desc = "Use the number keys (1 thru 0) to select Quest rewards when multiple are available",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		dontAcceptInvite = {
-			order = 9,
-			name = "|cffffd100Don't Accept Group Invites|r",
-			desc = "Don't allow DialogKey to accept Raid/Party Invitations",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		dontClickSummons = {
-			order = 10,
-			name = "|cffffd100Don't Accept Summons|r",
-			desc = "Don't allow DialogKey to accept Summon Requests",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		dontClickDuels = {
-			order = 11,
-			name = "|cffffd100Don't Accept Duels|r",
-			desc = "Don't allow DialogKey to accept Duel Requests",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		dontClickRevives = {
-			order = 12,
-			name = "|cffffd100Don't Accept Revives|r",
-			desc = "Don't allow DialogKey to accept Resurrections",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		dontClickReleases = {
-			order = 13,
-			name = "|cffffd100Don't Release Spirit|r",
-			desc = "Don't allow DialogKey to Release Spirit",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		useSoulstoneRez = {
-			order = 14,
-			name = "|cffffd100Use Class-specific Revive|r",
-			desc = "Use Soulstone/Ankh/etc. resurrection option when available and a normal revive is not\nThis option |cffff0000ignores|r the Don't Accept Revives option!",
-			descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-		};
-		
-
-		header3 = {
-			order = 15,
-			name = "Priority Options",
-			type = "header",
-			desc = "NYI",
-		};
-		header4 = {
-			order = 16,
-			name = "Custom Button Watchlist",
-			type = "header",
-			desc = "NYI",
-		};
-		header5 = {
-			order = 17,
-			name = "Custom Popup Blacklist",
-			type = "header",
-			desc = "NYI",
+		subgroup4 = {
+			order = 4,
+			name = "Popup Blacklist",
+			desc = "List of popup dialogs for DialogKey to completely ignore",
+			type = "group",
+			args = {
+				temp = {
+					order = 1,
+					name = "=== Custom Popup Blacklist NYI ===",
+					type = "description",
+					fontSize = "medium",
+				};
+			}
 		};
 	}
 }

@@ -5,9 +5,16 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
+	END_BOUND_TRADEABLE,
 }
 
 function DialogKey:OnInitialize()
+	if IsAddOnLoaded("Immersion") then
+		self:print("Immersion AddOn detected.")
+		self:print("The Immersion addon is known to conflict with DialogKey!")
+		self:print("Please check your addon settings before reporting bugs.")
+	end
+
 	-- defaultOptions defined in `options.lua`
 	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
 	
@@ -252,18 +259,15 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 		end
 	end
 
-	table.sort(DialogKey.frames, function(a,b) return a:GetTop() > b:GetTop() end)
+	table.sort(DialogKey.frames, function(a,b) return a:GetOrderIndex() < b:GetOrderIndex() end)
 
 	if DialogKey.db.global.numKeysForGossip then
 		for i, frame in ipairs(DialogKey.frames) do
-			if i > 10 then
-				break
-			end
-			if i == 10 then
-				frame:SetText("0" .. ". " .. frame:GetText())
-			else
-				frame:SetText(i .. ". " .. frame:GetText())
-			end
+			if i > 10 then break end
+			frame:SetText(i%10 .. ". " .. frame:GetText())
+
+			-- Make the button taller if the text inside is wrapped to multiple lines
+			frame:SetHeight(frame:GetFontString():GetHeight()+2)
 		end
 	end
 end
