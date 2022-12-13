@@ -9,6 +9,12 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 }
 
 function DialogKey:OnInitialize()
+	if IsAddOnLoaded("Immersion") then
+		self:print("Immersion AddOn detected.")
+		self:print("The Immersion addon is known to conflict with DialogKey!")
+		self:print("Please check your addon settings before reporting bugs.")
+	end
+
 	-- defaultOptions defined in `options.lua`
 	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
 	
@@ -253,7 +259,7 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 		end
 	end
 
-	table.sort(DialogKey.frames, function(a,b) return a:GetTop() > b:GetTop() end)
+	table.sort(DialogKey.frames, function(a,b) return a:GetOrderIndex() < b:GetOrderIndex() end)
 
 	if DialogKey.db.global.numKeysForGossip then
 		for i, frame in ipairs(DialogKey.frames) do
