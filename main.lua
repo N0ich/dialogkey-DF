@@ -94,7 +94,9 @@ local function ignoreInput()
 	if focus and not (StaticPopup1:IsVisible() and (focus:GetName() == "SendMailNameEditBox" or focus:GetName() == "SendMailSubjectEditBox")) then return true end 
 
 	-- Ignore input if there's something for DialogKey to click
-	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible() then return true end
+	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible()
+		-- Ignore input if the Auction House sell frame is not open
+	and (not AuctionHouseFrame or AuctionHouseFrame.displayMode ~= AuctionHouseFrameDisplayMode.ItemSell and AuctionHouseFrame.displayMode ~= AuctionHouseFrameDisplayMode.CommoditiesSell) then return true end
 
 	return false
 end
@@ -171,6 +173,19 @@ function DialogKey:HandleKey(key)
 				DialogKey:Glow(DEFAULT_CHAT_FRAME)
 				return
 			end
+		end
+
+		-- Auction House
+		if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+			DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
+			AuctionHouseFrame.CommoditiesSellFrame:PostItem()
+			return
+		elseif AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.ItemSell then
+			DialogKey.frame:SetPropagateKeyboardInput(false)
+			DialogKey:Glow(AuctionHouseFrame.ItemSellFrame.PostButton)
+			AuctionHouseFrame.ItemSellFrame:PostItem()
+			return
 		end
 
 		-- Complete Quest
