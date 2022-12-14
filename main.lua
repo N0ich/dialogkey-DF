@@ -16,12 +16,17 @@ local function GossipDataProviderHook(frame)
 	if DialogKey.db.global.numKeysForGossip then
 		local n = 1
 		for _, item in ipairs(dp.collection) do
+			local tag
 			if item.buttonType == GOSSIP_BUTTON_TYPE_OPTION then
-				item.info.name = n%10 .. ". " .. item.info.name
-				n = n + 1
+				tag = "name"
 			elseif item.buttonType == GOSSIP_BUTTON_TYPE_ACTIVE_QUEST or
 				   item.buttonType == GOSSIP_BUTTON_TYPE_AVAILABLE_QUEST then
-				item.info.title = n%10 .. ". " .. item.info.title
+				tag = "title"
+			end
+
+			if tag then
+				local dedup = item.info[tag]:match("^%d+%. (.+)") or item.info[tag]
+				item.info[tag] = n%10 .. ". " .. dedup
 				n = n + 1
 			end
 			if n > 10 then break end
