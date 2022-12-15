@@ -13,7 +13,7 @@ defaultOptions = {
 		dontClickRevives = false,
 		dontClickReleases = false,
 		useSoulstoneRez = true,
-		dontAcceptInvite = false,
+		dontAcceptInvite = true,
 		dontPostAuctions = false,
 		-- keyCooldown = 0.5
 	}
@@ -77,46 +77,46 @@ interfaceOptions = {
 					desc = "Use the number keys (1 thru 0) to select Quest rewards when multiple are available",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
-				dontAcceptInvite = {
+				dontPostAuctions = {
 					order = 4,
+					name = "|cffffd100Don't Post Auctions|r",
+					desc = "Don't allow DialogKey to Post Auctions",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontAcceptInvite = {
+					order = 5,
 					name = "|cffffd100Don't Accept Group Invites|r",
 					desc = "Don't allow DialogKey to accept Raid/Party Invitations",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				dontClickSummons = {
-					order = 5,
+					order = 6,
 					name = "|cffffd100Don't Accept Summons|r",
 					desc = "Don't allow DialogKey to accept Summon Requests",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				dontClickDuels = {
-					order = 6,
+					order = 7,
 					name = "|cffffd100Don't Accept Duels|r",
 					desc = "Don't allow DialogKey to accept Duel Requests",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				dontClickRevives = {
-					order = 7,
+					order = 8,
 					name = "|cffffd100Don't Accept Revives|r",
 					desc = "Don't allow DialogKey to accept Resurrections",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				dontClickReleases = {
-					order = 8,
+					order = 9,
 					name = "|cffffd100Don't Release Spirit|r",
 					desc = "Don't allow DialogKey to Release Spirit",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				useSoulstoneRez = {
-					order = 9,
+					order = 10,
 					name = "|cffffd100Use Class-specific Revive|r",
 					desc = "Use Soulstone/Ankh/etc. resurrection option when one is available and a normal/battle resurrection is not\n\nThis option |cffff0000ignores|r the |cffffd100Don't Accept Revives|r option!",
-					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
-				};
-				dontPostAuctions = {
-					order = 10,
-					name = "|cffffd100Don't Post Auctions|r",
-					desc = "Don't use DialogKey to Post Auctions",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 			}
