@@ -176,16 +176,18 @@ function DialogKey:HandleKey(key)
 		end
 
 		-- Auction House
-		if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
-			AuctionHouseFrame.CommoditiesSellFrame:PostItem()
-			return
-		elseif AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.ItemSell then
-			DialogKey.frame:SetPropagateKeyboardInput(false)
-			DialogKey:Glow(AuctionHouseFrame.ItemSellFrame.PostButton)
-			AuctionHouseFrame.ItemSellFrame:PostItem()
-			return
+		if not DialogKey.db.global.dontPostAuctions then
+			if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
+				AuctionHouseFrame.CommoditiesSellFrame:PostItem()
+				return
+			elseif AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.ItemSell then
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(AuctionHouseFrame.ItemSellFrame.PostButton)
+				AuctionHouseFrame.ItemSellFrame:PostItem()
+				return
+			end
 		end
 
 		-- Complete Quest

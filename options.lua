@@ -14,6 +14,7 @@ defaultOptions = {
 		dontClickReleases = false,
 		useSoulstoneRez = true,
 		dontAcceptInvite = false,
+		dontPostAuctions = false,
 		-- keyCooldown = 0.5
 	}
 }
@@ -110,6 +111,12 @@ interfaceOptions = {
 					order = 9,
 					name = "|cffffd100Use Class-specific Revive|r",
 					desc = "Use Soulstone/Ankh/etc. resurrection option when one is available and a normal/battle resurrection is not\n\nThis option |cffff0000ignores|r the |cffffd100Don't Accept Revives|r option!",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				dontPostAuctions = {
+					order = 10,
+					name = "|cffffd100Don't Post Auctions|r",
+					desc = "Don't use DialogKey to Post Auctions",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 			}
