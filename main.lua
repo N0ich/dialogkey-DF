@@ -96,7 +96,7 @@ local function ignoreInput()
 	-- Ignore input if there's something for DialogKey to click
 	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible()
 		-- Ignore input if the Auction House sell frame is not open
-	and (not AuctionHouseFrame or AuctionHouseFrame.displayMode ~= AuctionHouseFrameDisplayMode.ItemSell and AuctionHouseFrame.displayMode ~= AuctionHouseFrameDisplayMode.CommoditiesSell) then return true end
+	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
 
 	return false
 end
@@ -176,7 +176,7 @@ function DialogKey:HandleKey(key)
 		end
 
 		-- Auction House
-		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame then
+		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
 			if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
 				DialogKey.frame:SetPropagateKeyboardInput(false)
 				DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
