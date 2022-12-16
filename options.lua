@@ -13,7 +13,7 @@ defaultOptions = {
 		dontClickRevives = false,
 		dontClickReleases = false,
 		useSoulstoneRez = true,
-		dontAcceptInvite = true,
+		dontAcceptInvite = false,
 		dontPostAuctions = false,
 		-- keyCooldown = 0.5
 	}
