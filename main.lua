@@ -176,7 +176,7 @@ function DialogKey:HandleKey(key)
 		end
 
 		-- Auction House
-		if not DialogKey.db.global.dontPostAuctions then
+		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame then
 			if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
 				DialogKey.frame:SetPropagateKeyboardInput(false)
 				DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
