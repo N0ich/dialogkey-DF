@@ -1,0 +1,10 @@
+[github]@N0ich
+- revived AddOn from BfA death
+- implemented auto-release pipeline for WoWAce and CurseForge
+
+[github]@FuriousProgrammer
+- code refactoring and general maintenance
+
+[github]@mbattersby
+- lots of useful error reports and code suggestions!
+

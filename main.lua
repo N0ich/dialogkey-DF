@@ -8,6 +8,34 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	END_BOUND_TRADEABLE,
 }
 
+-- Thanks, [github]@mbattersby
+-- Prefix list of GossipFrame(!!) options with 1., 2., 3. etc.
+local function GossipDataProviderHook(frame)
+	local dp = frame.GreetingPanel.ScrollBox:GetDataProvider()
+
+	if DialogKey.db.global.numKeysForGossip then
+		local n = 1
+		for _, item in ipairs(dp.collection) do
+			local tag
+			if item.buttonType == GOSSIP_BUTTON_TYPE_OPTION then
+				tag = "name"
+			elseif item.buttonType == GOSSIP_BUTTON_TYPE_ACTIVE_QUEST or
+				   item.buttonType == GOSSIP_BUTTON_TYPE_AVAILABLE_QUEST then
+				tag = "title"
+			end
+
+			if tag then
+				local dedup = item.info[tag]:match("^%d+%. (.+)") or item.info[tag]
+				item.info[tag] = n%10 .. ". " .. dedup
+				n = n + 1
+			end
+			if n > 10 then break end
+		end
+	end
+
+	frame.GreetingPanel.ScrollBox:SetDataProvider(dp)
+end
+
 function DialogKey:OnInitialize()
 	if IsAddOnLoaded("Immersion") then
 		self:print("Immersion AddOn detected.")
@@ -45,6 +73,8 @@ function DialogKey:OnInitialize()
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 
+	hooksecurefunc(GossipFrame, "Update", GossipDataProviderHook) -- Thanks, [github]@mbattersby
+
 	self.frame:SetFrameStrata("TOOLTIP") -- Ensure we receive keyboard events first
 	self.frame:EnableKeyboard(true)
 	self.frame:SetPropagateKeyboardInput(true)
@@ -64,7 +94,9 @@ local function ignoreInput()
 	if focus and not (StaticPopup1:IsVisible() and (focus:GetName() == "SendMailNameEditBox" or focus:GetName() == "SendMailSubjectEditBox")) then return true end 
 
 	-- Ignore input if there's something for DialogKey to click
-	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible() then return true end
+	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible()
+		-- Ignore input if the Auction House sell frame is not open
+	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
 
 	return false
 end
@@ -139,6 +171,21 @@ function DialogKey:HandleKey(key)
 				DialogKey.frame:SetPropagateKeyboardInput(false)
 				DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
 				DialogKey:Glow(DEFAULT_CHAT_FRAME)
+				return
+			end
+		end
+
+		-- Auction House
+		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
+			if AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.CommoditiesSell then
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(AuctionHouseFrame.CommoditiesSellFrame.PostButton)
+				AuctionHouseFrame.CommoditiesSellFrame:PostItem()
+				return
+			elseif AuctionHouseFrame.displayMode == AuctionHouseFrameDisplayMode.ItemSell then
+				DialogKey.frame:SetPropagateKeyboardInput(false)
+				DialogKey:Glow(AuctionHouseFrame.ItemSellFrame.PostButton)
+				AuctionHouseFrame.ItemSellFrame:PostItem()
 				return
 			end
 		end
@@ -230,7 +277,7 @@ function DialogKey:SelectItemReward()
 	end
 end
 
--- Prefix list of Gossip/Quest options with 1., 2., 3. etc.
+-- Prefix list of QuestGreetingFrame(!!) options with 1., 2., 3. etc.
 -- Also builds DialogKey.frames, used to click said options
 function DialogKey:EnumerateGossips(isGossipFrame)
 	if not ( QuestFrameGreetingPanel:IsVisible() or GossipFrame.GreetingPanel:IsVisible() ) then return end
@@ -259,9 +306,15 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 		end
 	end
 
-	table.sort(DialogKey.frames, function(a,b) return a:GetOrderIndex() < b:GetOrderIndex() end)
+	table.sort(DialogKey.frames, function(a,b) 
+		if a.GetOrderIndex then
+			return a:GetOrderIndex() < b:GetOrderIndex()
+		else
+			return a:GetTop() > b:GetTop()
+		end
+	end)
 
-	if DialogKey.db.global.numKeysForGossip then
+	if DialogKey.db.global.numKeysForGossip and not isGossipFrame then
 		for i, frame in ipairs(DialogKey.frames) do
 			if i > 10 then break end
 			frame:SetText(i%10 .. ". " .. frame:GetText())
