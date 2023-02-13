@@ -2,11 +2,7 @@
 ## Title: DialogKey DF
 ## Notes: Lets you hit a key to confirm loot/purchase dialogs, accept/complete quests, select quest rewards, etc. Hit 2 to select a reward then spacebar to complete quests? Easy!
 ## Author: N01ch & FuriousProgrammer
-<<<<<<< HEAD
-## Version: 1.4.7
-=======
-## Version: 1.4.5
->>>>>>> 62c095840fbc06c211bede5a266412e70f64eb11
+## Version: 1.4.8
 ## SavedVariables: DialogKeyDFDB
 ## OptionalDeps: Immersion
 embeds.xml
