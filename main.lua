@@ -5,6 +5,7 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
+	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 }
 
@@ -88,9 +89,9 @@ end
 
 local function ignoreInput()
 	DialogKey.frame:SetPropagateKeyboardInput(true)
-
 	-- Ignore input while typing, unless at the Send Mail confirmation while typing into it!
 	local focus = GetCurrentKeyBoardFocus()
+	if DialogKey.db.global.ignoreWithModifier and (IsShiftKeyDown() or IsControlKeyDown() or IsAltKeyDown()) then return true end
 	if focus and not (StaticPopup1:IsVisible() and (focus:GetName() == "SendMailNameEditBox" or focus:GetName() == "SendMailSubjectEditBox")) then return true end 
 
 	-- Ignore input if there's something for DialogKey to click
@@ -120,7 +121,7 @@ local function getPopupButton()
 	-- If resurrect dialog has three buttons, and the option is enabled, use the middle one instead of the first one (soulstone, etc.)
 	-- Located before resurrect/release checks/returns so it happens even if you have releases/revives disabled
 	-- Also, Check if Button2 is visible instead of Button3 since Recap is always 3; 2 is hidden if you can't soulstone rez	
-	
+
 	-- the ordering here means that a revive will be taken before a battle rez before a release.
 	-- if revives are disabled but soulstone battlerezzes *aren't*, nothing will happen if both are available!
 	-- (originall DialogKey worked this way too, comment if you think this should be changed!)
@@ -240,7 +241,7 @@ function DialogKey:HandleKey(key)
 	end
 
 	-- QuestFrame
-	if (doAction or DialogKey.db.global.numKeysForGossip) and QuestFrameGreetingPanel:IsVisible()  then
+	if (doAction or DialogKey.db.global.numKeysForGossip) and QuestFrameGreetingPanel:IsVisible() and DialogKey.frame then
 		while keynum and keynum > 0 and keynum <= #DialogKey.frames do
 			local title, is_complete = GetActiveTitle(keynum)
 			if doAction and not is_complete and DialogKey.frames[keynum].isActive == 1 and DialogKey.db.global.ignoreDisabledButtons then
@@ -289,17 +290,21 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 	--   :)
 	-- FuriousProgrammer
 	local tab
+	DialogKey.frames = {}
 	if isGossipFrame then
 		tab = {}
 		for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
 			tab[v] = true
 		end
 	else
-		tab = QuestFrameGreetingPanel.titleButtonPool.activeObjects
+		if QuestFrameGreetingPanel and QuestFrameGreetingPanel.titleButtonPool then
+			tab = QuestFrameGreetingPanel.titleButtonPool.activeObjects
 		-- _, tab = QuestFrameGreetingPanel.titleButtonPool:EnumerateActive()
+		else
+			return
+		end
 	end
 
-	DialogKey.frames = {}
 	for v in next, tab do
 		if v:GetObjectType() == "Button" and v:IsVisible() then
 			table.insert(DialogKey.frames, v)
