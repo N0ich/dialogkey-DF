@@ -15,6 +15,7 @@ defaultOptions = {
 		useSoulstoneRez = true,
 		dontAcceptInvite = false,
 		dontPostAuctions = true,
+		ignoreWithModifier = false,
 		-- keyCooldown = 0.5
 	}
 }
@@ -127,14 +128,20 @@ interfaceOptions = {
 			desc = "Advanced Options to control DialogKey button priority",
 			type = "group",
 			args = {
-				ignoreDisabledButtons = {
+				ignoreWithModifier = {
 					order = 1,
+					name = "|cffffd100Ignore when pressing modifier|r",
+					desc = "Action won't fire if you're pressing Shift, Alt, or Ctrl",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				ignoreDisabledButtons = {
+					order = 2,
 					name = "|cffffd100Ignore Disabled Buttons|r",
 					desc = "Don't allow DialogKey to click on disabled (greyed out) buttons",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				temp = {
-					order = 2,
+					order = 3,
 					name = "=== Advanced Priority Customization NYI ===",
 					type = "description",
 					fontSize = "medium",
