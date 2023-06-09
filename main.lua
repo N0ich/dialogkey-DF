@@ -9,6 +9,10 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	ADDON_ACTION_FORBIDDEN,
 }
 
+combatLockdown = { -- 
+	"Equipping this item will bind it to you.", -- EQUIP_BIND doesn't work, returns nil
+}
+
 -- Thanks, [github]@mbattersby
 -- Prefix list of GossipFrame(!!) options with 1., 2., 3. etc.
 local function GossipDataProviderHook(frame)
@@ -98,6 +102,17 @@ local function ignoreInput()
 	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible()
 		-- Ignore input if the Auction House sell frame is not open
 	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
+
+	-- Ignore input of certain popups in combat
+	local dialog = StaticPopup1Text:GetText():lower()
+	if InCombatLockdown() then
+		for _, text in pairs(combatLockdown) do
+			text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+			if dialog:find(text:lower()) then
+				return true
+			end
+		end
+	end
 
 	return false
 end
