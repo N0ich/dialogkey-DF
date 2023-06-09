@@ -1,12 +1,12 @@
 DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey")
 
--- confirmed still broken as of 10.0.2
 builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
+	ADDON_ACTION_FORBIDDEN,
 }
 
 -- Thanks, [github]@mbattersby
@@ -136,10 +136,12 @@ local function getPopupButton()
 	-- Ignore blacklisted popup dialogs!
 	local dialog = StaticPopup1Text:GetText():lower()
 	for _, text in pairs(DialogKey.db.global.dialogBlacklist) do
+		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
 		if dialog:find(text:lower()) then return end
 	end
 
 	for _, text in pairs(builtinDialogBlacklist) do
+		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
 		if dialog:find(text:lower()) then
 			return nil, true
 		end
