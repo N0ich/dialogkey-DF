@@ -104,12 +104,14 @@ local function ignoreInput()
 	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
 
 	-- Ignore input of certain popups in combat
-	local dialog = StaticPopup1Text:GetText():lower()
-	if InCombatLockdown() then
-		for _, text in pairs(combatLockdown) do
-			text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-			if dialog:find(text:lower()) then
-				return true
+	if StaticPopup1:IsVisible() then
+		local dialog = StaticPopup1Text:GetText():lower()
+		if InCombatLockdown() then
+			for _, text in pairs(combatLockdown) do
+				text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+				if dialog:find(text:lower()) then
+					return true
+				end
 			end
 		end
 	end
