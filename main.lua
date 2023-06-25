@@ -4,6 +4,7 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
+	"Resurrection in" -- Prevents cancelling the resurrection.
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 	ADDON_ACTION_FORBIDDEN,
