@@ -1,12 +1,16 @@
 DialogKey = LibStub("AceAddon-3.0"):NewAddon("DialogKey")
 
--- confirmed still broken as of 10.0.2
 builtinDialogBlacklist = { -- If a confirmation dialog contains one of these strings, don't accept it
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
+	ADDON_ACTION_FORBIDDEN,
+}
+
+combatLockdown = { -- 
+	"Equipping this item will bind it to you.", -- EQUIP_BIND doesn't work, returns nil
 }
 
 -- Thanks, [github]@mbattersby
@@ -99,6 +103,19 @@ local function ignoreInput()
 		-- Ignore input if the Auction House sell frame is not open
 	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
 
+	-- Ignore input of certain popups in combat
+	if StaticPopup1:IsVisible() then
+		local dialog = StaticPopup1Text:GetText():lower()
+		if InCombatLockdown() then
+			for _, text in pairs(combatLockdown) do
+				text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+				if dialog:find(text:lower()) then
+					return true
+				end
+			end
+		end
+	end
+
 	return false
 end
 
@@ -136,10 +153,12 @@ local function getPopupButton()
 	-- Ignore blacklisted popup dialogs!
 	local dialog = StaticPopup1Text:GetText():lower()
 	for _, text in pairs(DialogKey.db.global.dialogBlacklist) do
+		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
 		if dialog:find(text:lower()) then return end
 	end
 
 	for _, text in pairs(builtinDialogBlacklist) do
+		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
 		if dialog:find(text:lower()) then
 			return nil, true
 		end
