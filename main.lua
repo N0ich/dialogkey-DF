@@ -4,7 +4,8 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to go back to Shal'Aran?", -- Withered Training Scenario
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
-	"Resurrection in" -- Prevents cancelling the resurrection.
+	"Resurrection in", -- Prevents cancelling the resurrection
+	"Are you sure you wish to spend", -- Upgrade item is a protected func
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 	ADDON_ACTION_FORBIDDEN,
@@ -189,9 +190,8 @@ function DialogKey:HandleKey(key)
 				button:Click()
 				return
 			elseif builtinBlacklist then -- anything not intentionally blacklisted by the user should always consume the input
-				DialogKey.frame:SetPropagateKeyboardInput(false)
-				DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
-				DialogKey:Glow(DEFAULT_CHAT_FRAME)
+				DialogKey.frame:SetPropagateKeyboardInput(true)
+				-- DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
 				return
 			end
 		end
