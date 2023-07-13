@@ -16,6 +16,7 @@ defaultOptions = {
 		dontAcceptInvite = false,
 		dontPostAuctions = true,
 		ignoreWithModifier = false,
+		showErrorMessage = true,
 		-- keyCooldown = 0.5
 	}
 }
@@ -130,8 +131,8 @@ interfaceOptions = {
 			args = {
 				ignoreWithModifier = {
 					order = 1,
-					name = "|cffffd100Ignore when pressing modifier|r",
-					desc = "Action won't fire if you're pressing Shift, Alt, or Ctrl",
+					name = "|cffffd100Ignore DialogKey with Modifiers|r",
+					desc = "Disable DialogKey while any modifier key is held (Shift, Alt, Ctrl)",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
 				ignoreDisabledButtons = {
@@ -140,8 +141,14 @@ interfaceOptions = {
 					desc = "Don't allow DialogKey to click on disabled (greyed out) buttons",
 					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
 				};
-				temp = {
+				showErrorMessage = {
 					order = 3,
+					name = "|cffffd100Capture Broken Inputs|r",
+					desc = "When DialogKey attempts to click a button known to cause a Lua error when clicked by addons, capture this input as if the button was clicked and display an error message in the chat box",
+					descStyle = "inline", width = "full", type = "toggle", set = optionSetter, get = optionGetter,
+				};
+				temp = {
+					order = 4,
 					name = "=== Advanced Priority Customization NYI ===",
 					type = "description",
 					fontSize = "medium",

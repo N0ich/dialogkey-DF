@@ -11,10 +11,6 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	ADDON_ACTION_FORBIDDEN,
 }
 
-combatLockdown = { -- 
-	"Equipping this item will bind it to you.", -- EQUIP_BIND doesn't work, returns nil
-}
-
 -- Thanks, [github]@mbattersby
 -- Prefix list of GossipFrame(!!) options with 1., 2., 3. etc.
 local function GossipDataProviderHook(frame)
@@ -94,6 +90,10 @@ end
 -- Internal/Private Functions --
 
 local function ignoreInput()
+	-- Blizz locked SetPropagateKeyBoardInput while in combat! :(
+	-- TODO: figure out if there is a way to intentionally propagate a keyboard event without modifying the frame
+	if InCombatLockdown() then return true end
+
 	DialogKey.frame:SetPropagateKeyboardInput(true)
 	-- Ignore input while typing, unless at the Send Mail confirmation while typing into it!
 	local focus = GetCurrentKeyBoardFocus()
@@ -104,19 +104,6 @@ local function ignoreInput()
 	if not GossipFrame:IsVisible() and not QuestFrame:IsVisible() and not StaticPopup1:IsVisible()
 		-- Ignore input if the Auction House sell frame is not open
 	and (not AuctionHouseFrame or not AuctionHouseFrame:IsVisible()) then return true end
-
-	-- Ignore input of certain popups in combat
-	if StaticPopup1:IsVisible() then
-		local dialog = StaticPopup1Text:GetText():lower()
-		if InCombatLockdown() then
-			for _, text in pairs(combatLockdown) do
-				text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-				if dialog:find(text:lower()) then
-					return true
-				end
-			end
-		end
-	end
 
 	return false
 end
@@ -189,9 +176,13 @@ function DialogKey:HandleKey(key)
 				DialogKey:Glow(button)
 				button:Click()
 				return
-			elseif builtinBlacklist then -- anything not intentionally blacklisted by the user should always consume the input
-				DialogKey.frame:SetPropagateKeyboardInput(true)
-				-- DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
+			elseif builtinBlacklist then -- if DialogKey isn't allowed to click a particular button
+				if DialogKey.db.global.showErrorMessage then -- capture the input and display an error message
+					DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
+					DialogKey.frame:SetPropagateKeyboardInput(false)
+				else -- or just do nothing :shrug:
+					DialogKey.frame:SetPropagateKeyboardInput(true)
+				end
 				return
 			end
 		end
