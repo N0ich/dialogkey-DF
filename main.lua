@@ -65,9 +65,14 @@ function DialogKey:OnInitialize()
 	self.frame:RegisterEvent("GOSSIP_SHOW")
 	self.frame:RegisterEvent("QUEST_GREETING")
 	self.frame:RegisterEvent("QUEST_COMPLETE")
+	self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 	self.frame:SetScript("OnEvent", function(__, event, ...)
 		if event == "QUEST_COMPLETE" then
 			DialogKey.itemChoice = (GetNumQuestChoices() > 1 and -1 or 1)
+		elseif event == "PLAYER_REGEN_DISABLED" then
+			-- Disable DialogKey fully upon entering combat
+			-- Fixes Battle Rezzes breaking all inputs!
+			self.frame:SetPropagateKeyboardInput(true)
 		else
 			self:EnumerateGossips( event == "GOSSIP_SHOW" )
 		end
