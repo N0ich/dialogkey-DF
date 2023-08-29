@@ -1,4 +1,4 @@
-## Interface: 100105
+## Interface: 11404
 ## Title: DialogKey DF
 ## Notes: Lets you hit a key to confirm loot/purchase dialogs, accept/complete quests, select quest rewards, etc. Hit 2 to select a reward then spacebar to complete quests? Easy!
 ## Author: N01ch & FuriousProgrammer
