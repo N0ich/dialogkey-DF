@@ -316,6 +316,14 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 		if QuestFrameGreetingPanel and QuestFrameGreetingPanel.titleButtonPool then
 			tab = QuestFrameGreetingPanel.titleButtonPool.activeObjects
 		-- _, tab = QuestFrameGreetingPanel.titleButtonPool:EnumerateActive()
+		elseif QuestFrameGreetingPanel and not QuestFrameGreetingPanel.titleButtonPool then
+			tab = {}
+			local children = {QuestGreetingScrollChildFrame:GetChildren()}
+			for i, c in ipairs(children) do
+				if c:GetObjectType() == "Button" and c:IsVisible() then
+					table.insert(DialogKey.frames, c)
+				end
+			end
 		else
 			return
 		end
