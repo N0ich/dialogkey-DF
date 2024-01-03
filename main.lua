@@ -5,7 +5,7 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 	"Resurrection in", -- Prevents cancelling the resurrection
-	"Are you sure you wish to spend", -- Upgrade item is a protected func
+	-- "Are you sure you wish to spend", -- Upgrade item is a protected func
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 	ADDON_ACTION_FORBIDDEN,
@@ -73,6 +73,7 @@ function DialogKey:OnInitialize()
 			-- Disable DialogKey fully upon entering combat
 			-- Fixes Battle Rezzes breaking all inputs!
 			self.frame:SetPropagateKeyboardInput(true)
+			self:ClearOverrideBindings()
 		else
 			self:EnumerateGossips( event == "GOSSIP_SHOW" )
 		end
@@ -80,6 +81,8 @@ function DialogKey:OnInitialize()
 
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
+	StaticPopup1:HookScript("OnShow", function(popupFrame) DialogKey:OnPopupShow(popupFrame) end)
+	StaticPopup1:HookScript("OnHide", function(popupFrame) DialogKey:OnPopupHide(popupFrame) end)
 
 	hooksecurefunc(GossipFrame, "Update", GossipDataProviderHook) -- Thanks, [github]@mbattersby
 
@@ -161,6 +164,45 @@ local function getPopupButton()
 	return StaticPopup1Button1
 end
 
+DialogKey.activeOverrideBindings = {}
+-- Clears all override bindings associated with a frame, clears all override bindings if no frame is passed
+function DialogKey:ClearOverrideBindings(frame)
+	if not frame then
+		for frame, _ in pairs(self.activeOverrideBindings) do
+			self:ClearOverrideBindings(frame)
+		end
+	end
+	if not self.activeOverrideBindings[frame] then return end
+	for key, owner in pairs(self.activeOverrideBindings[frame]) do
+		SetOverrideBinding(owner, false, key, nil)
+	end
+	self.activeOverrideBindings[frame] = nil
+end
+
+function DialogKey:SetOverrideBindings(owner, targetName, keys)
+	self.activeOverrideBindings[owner] = {}
+	for _, key in pairs(keys) do
+		self.activeOverrideBindings[owner][key] = owner;
+		SetOverrideBindingClick(owner, false, key, targetName);
+	end
+end
+
+function DialogKey:OnPopupShow(popupFrame)
+	if InCombatLockdown() or not popupFrame:IsVisible() then return end
+	
+	local button = getPopupButton()
+	self:ClearOverrideBindings(owner)
+	if not button then return end
+	
+	self:SetOverrideBindings(popupFrame, button:GetName(), self.db.global.keys)
+end
+
+function DialogKey:OnPopupHide(popupFrame)
+	if InCombatLockdown() then return end
+	
+	self:ClearOverrideBindings(popupFrame)
+end
+
 function DialogKey:HandleKey(key)
 	if ignoreInput() then return end
 
@@ -174,7 +216,7 @@ function DialogKey:HandleKey(key)
 
 		-- Click Popup
 		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
-		if StaticPopup1:IsVisible() then
+		--[[if StaticPopup1:IsVisible() then
 			button, builtinBlacklist = getPopupButton()
 			if button and (button:IsEnabled() or not DialogKey.db.global.ignoreDisabledButtons) then
 				DialogKey.frame:SetPropagateKeyboardInput(false)
@@ -190,7 +232,7 @@ function DialogKey:HandleKey(key)
 				end
 				return
 			end
-		end
+		end--]]
 
 		-- Auction House
 		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
@@ -380,26 +422,26 @@ end
 
 -- Recursively print a table
 function DialogKey:print_r (t)
-    local print_r_cache={}
-    local function sub_print_r(t,indent)
-        if (print_r_cache[tostring(t)]) then
-            print(indent.."*"..tostring(t))
-        else
-            print_r_cache[tostring(t)]=true
-            if (type(t)=="table") then
-                for pos,val in pairs(t) do
-                    if (type(val)=="table") then
-                        print(indent.."["..pos.."] => "..tostring(t).." {")
-                        sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
-                        print(indent..string.rep(" ",string.len(pos)+6).."}")
-                    else
-                        print(indent.."["..pos.."] => "..tostring(val))
-                    end
-                end
-            else
-                print(indent..tostring(t))
-            end
-        end
-    end
-    sub_print_r(t,"  ")
+	local print_r_cache={}
+	local function sub_print_r(t,indent)
+		if (print_r_cache[tostring(t)]) then
+			print(indent.."*"..tostring(t))
+		else
+			print_r_cache[tostring(t)]=true
+			if (type(t)=="table") then
+				for pos,val in pairs(t) do
+					if (type(val)=="table") then
+						print(indent.."["..pos.."] => "..tostring(t).." {")
+						sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
+						print(indent..string.rep(" ",string.len(pos)+6).."}")
+					else
+						print(indent.."["..pos.."] => "..tostring(val))
+					end
+				end
+			else
+				print(indent..tostring(t))
+			end
+		end
+	end
+	sub_print_r(t,"  ")
 end
