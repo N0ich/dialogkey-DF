@@ -82,6 +82,7 @@ function DialogKey:OnInitialize()
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
 	StaticPopup1:HookScript("OnShow", function(popupFrame) DialogKey:OnPopupShow(popupFrame) end)
+	StaticPopup1:HookScript("OnUpdate", function(popupFrame) DialogKey:OnPopupUpdate(popupFrame) end)
 	StaticPopup1:HookScript("OnHide", function(popupFrame) DialogKey:OnPopupHide(popupFrame) end)
 
 	hooksecurefunc(GossipFrame, "Update", GossipDataProviderHook) -- Thanks, [github]@mbattersby
@@ -125,12 +126,18 @@ local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
 local groupinvite_match = INVITATION:gsub("%%s", ".+")
 
 local function getPopupButton()
+	local text = StaticPopup1Text:GetText()
+	
+	-- Some popups have no text when they initially show, and instead get text applied OnUpdate (summons are an example)
+	-- False is returned in that case, so we know to keep checking OnUpdate
+	if text == " " or text == "" then return false end
+	
 	-- Don't accept group invitations if the option is enabled
-	if DialogKey.db.global.dontAcceptInvite and StaticPopup1Text:GetText():find(groupinvite_match) then return end
+	if DialogKey.db.global.dontAcceptInvite and text:find(groupinvite_match) then return end
 
 	-- Don't accept summons/duels/resurrects if the options are enabled
-	if DialogKey.db.global.dontClickSummons and StaticPopup1Text:GetText():find(summon_match) then return end
-	if DialogKey.db.global.dontClickDuels and StaticPopup1Text:GetText():find(duel_match) then return end
+	if DialogKey.db.global.dontClickSummons and text:find(summon_match) then return end
+	if DialogKey.db.global.dontClickDuels and text:find(duel_match) then return end
 
 	-- If resurrect dialog has three buttons, and the option is enabled, use the middle one instead of the first one (soulstone, etc.)
 	-- Located before resurrect/release checks/returns so it happens even if you have releases/revives disabled
@@ -144,19 +151,19 @@ local function getPopupButton()
 		return StaticPopup1Button2
 	end
 
-	if DialogKey.db.global.dontClickRevives and (StaticPopup1Text:GetText() == RECOVER_CORPSE or StaticPopup1Text:GetText():find(resurrect_match)) then return end
+	if DialogKey.db.global.dontClickRevives and (text == RECOVER_CORPSE or text:find(resurrect_match)) then return end
 	if DialogKey.db.global.dontClickReleases and canRelease then return end
 
 	-- Ignore blacklisted popup dialogs!
-	local dialog = StaticPopup1Text:GetText():lower()
-	for _, text in pairs(DialogKey.db.global.dialogBlacklist) do
-		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-		if dialog:find(text:lower()) then return end
+	local lowerCaseText = text:lower()
+	for _, blacklistText in pairs(DialogKey.db.global.dialogBlacklist) do
+		blacklistText = blacklistText:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+		if lowerCaseText:find(blacklistText:lower()) then return end
 	end
 
-	for _, text in pairs(builtinDialogBlacklist) do
-		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-		if dialog:find(text:lower()) then
+	for _, blacklistText in pairs(builtinDialogBlacklist) do
+		blacklistText = blacklistText:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+		if lowerCaseText:find(blacklistText:lower()) then
 			return nil, true
 		end
 	end
@@ -187,14 +194,25 @@ function DialogKey:SetOverrideBindings(owner, targetName, keys)
 	end
 end
 
+DialogKey.checkOnUpdate = {}
 function DialogKey:OnPopupShow(popupFrame)
+	self.checkOnUpdate[popupFrame] = false
 	if InCombatLockdown() or not popupFrame:IsVisible() then return end
 	
 	local button = getPopupButton()
 	self:ClearOverrideBindings(owner)
+	if button == false then
+		self.checkOnUpdate[popupFrame] = true
+		return
+	end
 	if not button then return end
 	
 	self:SetOverrideBindings(popupFrame, button:GetName(), self.db.global.keys)
+end
+
+function DialogKey:OnPopupUpdate(popupFrame)
+	if not self.checkOnUpdate[popupFrame] then return end
+	self:OnPopupShow(popupFrame)
 end
 
 function DialogKey:OnPopupHide(popupFrame)
