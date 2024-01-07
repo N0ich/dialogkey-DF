@@ -80,6 +80,7 @@ function DialogKey:OnInitialize()
 
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
+	-- Todo: Consider adding StaticPopup2 and StaticPopup3 support
 	StaticPopup1:HookScript("OnShow", function(popupFrame) DialogKey:OnPopupShow(popupFrame) end)
 	StaticPopup1:HookScript("OnUpdate", function(popupFrame) DialogKey:OnPopupUpdate(popupFrame) end)
 	StaticPopup1:HookScript("OnHide", function(popupFrame) DialogKey:OnPopupHide(popupFrame) end)
@@ -93,6 +94,10 @@ function DialogKey:OnInitialize()
 	-- interfaceOptions defined in `options.lua`
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("DialogKey", interfaceOptions)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("DialogKey")
+
+	-- Slash command to open the options menu
+	_G.SLASH_DIALOGKEY1 = '/dialogkey'
+	SlashCmdList['DIALOGKEY'] = function() Settings.OpenToCategory("DialogKey") end
 end
 
 -- Internal/Private Functions --
@@ -124,8 +129,8 @@ local duel_match = DUEL_REQUESTED:gsub("%%s",".+")
 local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
 local groupinvite_match = INVITATION:gsub("%%s", ".+")
 
-local function getPopupButton()
-	local text = StaticPopup1Text:GetText()
+local function getPopupButton(popupFrame)
+	local text = popupFrame.text:GetText()
 
 	-- Some popups have no text when they initially show, and instead get text applied OnUpdate (summons are an example)
 	-- False is returned in that case, so we know to keep checking OnUpdate
@@ -145,9 +150,9 @@ local function getPopupButton()
 	-- the ordering here means that a revive will be taken before a battle rez before a release.
 	-- if revives are disabled but soulstone battlerezzes *aren't*, nothing will happen if both are available!
 	-- (originall DialogKey worked this way too, comment if you think this should be changed!)
-	local canRelease = StaticPopup1Button1Text:GetText() == DEATH_RELEASE
-	if DialogKey.db.global.useSoulstoneRez and canRelease and StaticPopup1Button2:IsVisible() then
-		return StaticPopup1Button2
+	local canRelease = popupFrame.button1.Text:GetText() == DEATH_RELEASE
+	if DialogKey.db.global.useSoulstoneRez and canRelease and popupFrame.button2:IsVisible() then
+		return popupFrame.button2
 	end
 
 	if DialogKey.db.global.dontClickRevives and (text == RECOVER_CORPSE or text:find(resurrect_match)) then return end
@@ -167,25 +172,29 @@ local function getPopupButton()
 		end
 	end
 
-	return StaticPopup1Button1
+	return popupFrame.button1
 end
 
 DialogKey.activeOverrideBindings = {}
--- Clears all override bindings associated with a frame, clears all override bindings if no frame is passed
-function DialogKey:ClearOverrideBindings(frame)
-	if not frame then
-		for frame, _ in pairs(self.activeOverrideBindings) do
-			self:ClearOverrideBindings(frame)
+-- Clears all override bindings associated with an owner, clears all override bindings if no owner is passed
+function DialogKey:ClearOverrideBindings(owner)
+	if InCombatLockdown() then return end
+	if not owner then
+		for owner, _ in pairs(self.activeOverrideBindings) do
+			self:ClearOverrideBindings(owner)
 		end
 	end
-	if not self.activeOverrideBindings[frame] then return end
-	for key, owner in pairs(self.activeOverrideBindings[frame]) do
+	if not self.activeOverrideBindings[owner] then return end
+	for key in pairs(self.activeOverrideBindings[owner]) do
 		SetOverrideBinding(owner, false, key, nil)
 	end
-	self.activeOverrideBindings[frame] = nil
+	self.activeOverrideBindings[owner] = nil
 end
 
+-- Set an override click binding, these bindings can safely perform secure actions
+-- Override bindings, are temporary keybinds, which can only be modified out of combat; they are tied to an owner, and need to be cleared when the target is hidden
 function DialogKey:SetOverrideBindings(owner, targetName, keys)
+	if InCombatLockdown() then return end
 	self.activeOverrideBindings[owner] = {}
 	for _, key in pairs(keys) do
 		self.activeOverrideBindings[owner][key] = owner;
@@ -200,9 +209,10 @@ function DialogKey:OnPopupShow(popupFrame)
 	self.checkOnUpdate[popupFrame] = false
 	if InCombatLockdown() or not popupFrame:IsVisible() then return end
 
-	local button = getPopupButton()
-	self:ClearOverrideBindings(owner)
+	local button = getPopupButton(popupFrame)
+	self:ClearOverrideBindings(popupFrame)
 	if button == false then
+		-- false means that the text is empty, and we should check again OnUpdate, for the text to be filled
 		self.checkOnUpdate[popupFrame] = true
 		return
 	end
@@ -235,7 +245,7 @@ function DialogKey:HandleKey(key)
 
 		-- Click Popup - the actual click is performed via OverrideBindings
 		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
-		if StaticPopup1:IsVisible() and getPopupButton() then
+		if StaticPopup1:IsVisible() and getPopupButton(StaticPopup1) then
 			DialogKey.frame:SetPropagateKeyboardInput(true)
 			return
 		end
