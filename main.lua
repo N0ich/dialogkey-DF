@@ -5,7 +5,6 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 	"Resurrection in", -- Prevents cancelling the resurrection
-	-- "Are you sure you wish to spend", -- Upgrade item is a protected func
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 	ADDON_ACTION_FORBIDDEN,
@@ -48,7 +47,7 @@ function DialogKey:OnInitialize()
 
 	-- defaultOptions defined in `options.lua`
 	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
-	
+
 	-- self.recentlyPressed = false -- TODO: reimplement "recently pressed" keyboard propogation delay
 
 	self.glowFrame = CreateFrame("Frame", "DialogKeyGlow", UIParent)
@@ -127,11 +126,11 @@ local groupinvite_match = INVITATION:gsub("%%s", ".+")
 
 local function getPopupButton()
 	local text = StaticPopup1Text:GetText()
-	
+
 	-- Some popups have no text when they initially show, and instead get text applied OnUpdate (summons are an example)
 	-- False is returned in that case, so we know to keep checking OnUpdate
 	if text == " " or text == "" then return false end
-	
+
 	-- Don't accept group invitations if the option is enabled
 	if DialogKey.db.global.dontAcceptInvite and text:find(groupinvite_match) then return end
 
@@ -196,9 +195,11 @@ end
 
 DialogKey.checkOnUpdate = {}
 function DialogKey:OnPopupShow(popupFrame)
+	-- Todo: support DialogKey.db.global.ignoreDisabledButtons option
+	-- right now, disabled buttons are clicked, but clicking them does nothing (but the key press is still eaten regardless)
 	self.checkOnUpdate[popupFrame] = false
 	if InCombatLockdown() or not popupFrame:IsVisible() then return end
-	
+
 	local button = getPopupButton()
 	self:ClearOverrideBindings(owner)
 	if button == false then
@@ -206,7 +207,7 @@ function DialogKey:OnPopupShow(popupFrame)
 		return
 	end
 	if not button then return end
-	
+
 	self:SetOverrideBindings(popupFrame, button:GetName(), self.db.global.keys)
 end
 
@@ -217,7 +218,7 @@ end
 
 function DialogKey:OnPopupHide(popupFrame)
 	if InCombatLockdown() then return end
-	
+
 	self:ClearOverrideBindings(popupFrame)
 end
 
@@ -232,25 +233,12 @@ function DialogKey:HandleKey(key)
 	-- DialogKey pressed, interact with popups, accepts..
 	if doAction then
 
-		-- Click Popup
+		-- Click Popup - the actual click is performed via OverrideBindings
 		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
-		--[[if StaticPopup1:IsVisible() then
-			button, builtinBlacklist = getPopupButton()
-			if button and (button:IsEnabled() or not DialogKey.db.global.ignoreDisabledButtons) then
-				DialogKey.frame:SetPropagateKeyboardInput(false)
-				DialogKey:Glow(button)
-				button:Click()
-				return
-			elseif builtinBlacklist then -- if DialogKey isn't allowed to click a particular button
-				if DialogKey.db.global.showErrorMessage then -- capture the input and display an error message
-					DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
-					DialogKey.frame:SetPropagateKeyboardInput(false)
-				else -- or just do nothing :shrug:
-					DialogKey.frame:SetPropagateKeyboardInput(true)
-				end
-				return
-			end
-		end--]]
+		if StaticPopup1:IsVisible() and getPopupButton() then
+			DialogKey.frame:SetPropagateKeyboardInput(true)
+			return
+		end
 
 		-- Auction House
 		if not DialogKey.db.global.dontPostAuctions and AuctionHouseFrame and AuctionHouseFrame:IsVisible() then
