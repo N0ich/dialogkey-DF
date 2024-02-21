@@ -5,7 +5,6 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 	"Are you sure you want to return to your current timeline?", -- Leave Chromie Time
 	"You will be removed from Timewalking Campaigns once you use this scroll.", -- "A New Adventure Awaits" Chromie Time scroll
 	"Resurrection in", -- Prevents cancelling the resurrection
-	"Are you sure you wish to spend", -- Upgrade item is a protected func
 	TOO_MANY_LUA_ERRORS,
 	END_BOUND_TRADEABLE,
 	ADDON_ACTION_FORBIDDEN,
@@ -48,7 +47,7 @@ function DialogKey:OnInitialize()
 
 	-- defaultOptions defined in `options.lua`
 	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
-	
+
 	-- self.recentlyPressed = false -- TODO: reimplement "recently pressed" keyboard propogation delay
 
 	self.glowFrame = CreateFrame("Frame", "DialogKeyGlow", UIParent)
@@ -73,6 +72,7 @@ function DialogKey:OnInitialize()
 			-- Disable DialogKey fully upon entering combat
 			-- Fixes Battle Rezzes breaking all inputs!
 			self.frame:SetPropagateKeyboardInput(true)
+			self:ClearOverrideBindings()
 		else
 			self:EnumerateGossips( event == "GOSSIP_SHOW" )
 		end
@@ -80,6 +80,10 @@ function DialogKey:OnInitialize()
 
 	hooksecurefunc("QuestInfoItem_OnClick", DialogKey.SelectItemReward)
 	self.frame:SetScript("OnKeyDown", DialogKey.HandleKey)
+	-- Todo: Consider adding StaticPopup2 and StaticPopup3 support
+	StaticPopup1:HookScript("OnShow", function(popupFrame) DialogKey:OnPopupShow(popupFrame) end)
+	StaticPopup1:HookScript("OnUpdate", function(popupFrame) DialogKey:OnPopupUpdate(popupFrame) end)
+	StaticPopup1:HookScript("OnHide", function(popupFrame) DialogKey:OnPopupHide(popupFrame) end)
 
 	hooksecurefunc(GossipFrame, "Update", GossipDataProviderHook) -- Thanks, [github]@mbattersby
 
@@ -90,6 +94,10 @@ function DialogKey:OnInitialize()
 	-- interfaceOptions defined in `options.lua`
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("DialogKey", interfaceOptions)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("DialogKey")
+
+	-- Slash command to open the options menu
+	_G.SLASH_DIALOGKEY1 = '/dialogkey'
+	SlashCmdList['DIALOGKEY'] = function() Settings.OpenToCategory("DialogKey") end
 end
 
 -- Internal/Private Functions --
@@ -121,13 +129,19 @@ local duel_match = DUEL_REQUESTED:gsub("%%s",".+")
 local resurrect_match = RESURRECT_REQUEST_NO_SICKNESS:gsub("%%s", ".+")
 local groupinvite_match = INVITATION:gsub("%%s", ".+")
 
-local function getPopupButton()
+local function getPopupButton(popupFrame)
+	local text = popupFrame.text:GetText()
+
+	-- Some popups have no text when they initially show, and instead get text applied OnUpdate (summons are an example)
+	-- False is returned in that case, so we know to keep checking OnUpdate
+	if text == " " or text == "" then return false end
+
 	-- Don't accept group invitations if the option is enabled
-	if DialogKey.db.global.dontAcceptInvite and StaticPopup1Text:GetText():find(groupinvite_match) then return end
+	if DialogKey.db.global.dontAcceptInvite and text:find(groupinvite_match) then return end
 
 	-- Don't accept summons/duels/resurrects if the options are enabled
-	if DialogKey.db.global.dontClickSummons and StaticPopup1Text:GetText():find(summon_match) then return end
-	if DialogKey.db.global.dontClickDuels and StaticPopup1Text:GetText():find(duel_match) then return end
+	if DialogKey.db.global.dontClickSummons and text:find(summon_match) then return end
+	if DialogKey.db.global.dontClickDuels and text:find(duel_match) then return end
 
 	-- If resurrect dialog has three buttons, and the option is enabled, use the middle one instead of the first one (soulstone, etc.)
 	-- Located before resurrect/release checks/returns so it happens even if you have releases/revives disabled
@@ -136,29 +150,86 @@ local function getPopupButton()
 	-- the ordering here means that a revive will be taken before a battle rez before a release.
 	-- if revives are disabled but soulstone battlerezzes *aren't*, nothing will happen if both are available!
 	-- (originall DialogKey worked this way too, comment if you think this should be changed!)
-	local canRelease = StaticPopup1Button1Text:GetText() == DEATH_RELEASE
-	if DialogKey.db.global.useSoulstoneRez and canRelease and StaticPopup1Button2:IsVisible() then
-		return StaticPopup1Button2
+	local canRelease = popupFrame.button1.Text:GetText() == DEATH_RELEASE
+	if DialogKey.db.global.useSoulstoneRez and canRelease and popupFrame.button2:IsVisible() then
+		return popupFrame.button2
 	end
 
-	if DialogKey.db.global.dontClickRevives and (StaticPopup1Text:GetText() == RECOVER_CORPSE or StaticPopup1Text:GetText():find(resurrect_match)) then return end
+	if DialogKey.db.global.dontClickRevives and (text == RECOVER_CORPSE or text:find(resurrect_match)) then return end
 	if DialogKey.db.global.dontClickReleases and canRelease then return end
 
 	-- Ignore blacklisted popup dialogs!
-	local dialog = StaticPopup1Text:GetText():lower()
-	for _, text in pairs(DialogKey.db.global.dialogBlacklist) do
-		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-		if dialog:find(text:lower()) then return end
+	local lowerCaseText = text:lower()
+	for _, blacklistText in pairs(DialogKey.db.global.dialogBlacklist) do
+		blacklistText = blacklistText:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+		if lowerCaseText:find(blacklistText:lower()) then return end
 	end
 
-	for _, text in pairs(builtinDialogBlacklist) do
-		text = text:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
-		if dialog:find(text:lower()) then
+	for _, blacklistText in pairs(builtinDialogBlacklist) do
+		blacklistText = blacklistText:gsub("%%s", ""):gsub("%W", "%%%0") -- Prepend non-alphabetical characters with '%' to escape them
+		if lowerCaseText:find(blacklistText:lower()) then
 			return nil, true
 		end
 	end
 
-	return StaticPopup1Button1
+	return popupFrame.button1
+end
+
+DialogKey.activeOverrideBindings = {}
+-- Clears all override bindings associated with an owner, clears all override bindings if no owner is passed
+function DialogKey:ClearOverrideBindings(owner)
+	if InCombatLockdown() then return end
+	if not owner then
+		for owner, _ in pairs(self.activeOverrideBindings) do
+			self:ClearOverrideBindings(owner)
+		end
+	end
+	if not self.activeOverrideBindings[owner] then return end
+	for key in pairs(self.activeOverrideBindings[owner]) do
+		SetOverrideBinding(owner, false, key, nil)
+	end
+	self.activeOverrideBindings[owner] = nil
+end
+
+-- Set an override click binding, these bindings can safely perform secure actions
+-- Override bindings, are temporary keybinds, which can only be modified out of combat; they are tied to an owner, and need to be cleared when the target is hidden
+function DialogKey:SetOverrideBindings(owner, targetName, keys)
+	if InCombatLockdown() then return end
+	self.activeOverrideBindings[owner] = {}
+	for _, key in pairs(keys) do
+		self.activeOverrideBindings[owner][key] = owner;
+		SetOverrideBindingClick(owner, false, key, targetName);
+	end
+end
+
+DialogKey.checkOnUpdate = {}
+function DialogKey:OnPopupShow(popupFrame)
+	-- Todo: support DialogKey.db.global.ignoreDisabledButtons option
+	-- right now, disabled buttons are clicked, but clicking them does nothing (but the key press is still eaten regardless)
+	self.checkOnUpdate[popupFrame] = false
+	if InCombatLockdown() or not popupFrame:IsVisible() then return end
+
+	local button = getPopupButton(popupFrame)
+	self:ClearOverrideBindings(popupFrame)
+	if button == false then
+		-- false means that the text is empty, and we should check again OnUpdate, for the text to be filled
+		self.checkOnUpdate[popupFrame] = true
+		return
+	end
+	if not button then return end
+
+	self:SetOverrideBindings(popupFrame, button:GetName(), self.db.global.keys)
+end
+
+function DialogKey:OnPopupUpdate(popupFrame)
+	if not self.checkOnUpdate[popupFrame] then return end
+	self:OnPopupShow(popupFrame)
+end
+
+function DialogKey:OnPopupHide(popupFrame)
+	if InCombatLockdown() then return end
+
+	self:ClearOverrideBindings(popupFrame)
 end
 
 function DialogKey:HandleKey(key)
@@ -172,24 +243,11 @@ function DialogKey:HandleKey(key)
 	-- DialogKey pressed, interact with popups, accepts..
 	if doAction then
 
-		-- Click Popup
+		-- Click Popup - the actual click is performed via OverrideBindings
 		-- TODO: StaticPopups 2-3 might have clickable buttons, enable them to be clicked?
-		if StaticPopup1:IsVisible() then
-			button, builtinBlacklist = getPopupButton()
-			if button and (button:IsEnabled() or not DialogKey.db.global.ignoreDisabledButtons) then
-				DialogKey.frame:SetPropagateKeyboardInput(false)
-				DialogKey:Glow(button)
-				button:Click()
-				return
-			elseif builtinBlacklist then -- if DialogKey isn't allowed to click a particular button
-				if DialogKey.db.global.showErrorMessage then -- capture the input and display an error message
-					DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
-					DialogKey.frame:SetPropagateKeyboardInput(false)
-				else -- or just do nothing :shrug:
-					DialogKey.frame:SetPropagateKeyboardInput(true)
-				end
-				return
-			end
+		if StaticPopup1:IsVisible() and getPopupButton(StaticPopup1) then
+			DialogKey.frame:SetPropagateKeyboardInput(true)
+			return
 		end
 
 		-- Auction House
@@ -380,26 +438,26 @@ end
 
 -- Recursively print a table
 function DialogKey:print_r (t)
-    local print_r_cache={}
-    local function sub_print_r(t,indent)
-        if (print_r_cache[tostring(t)]) then
-            print(indent.."*"..tostring(t))
-        else
-            print_r_cache[tostring(t)]=true
-            if (type(t)=="table") then
-                for pos,val in pairs(t) do
-                    if (type(val)=="table") then
-                        print(indent.."["..pos.."] => "..tostring(t).." {")
-                        sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
-                        print(indent..string.rep(" ",string.len(pos)+6).."}")
-                    else
-                        print(indent.."["..pos.."] => "..tostring(val))
-                    end
-                end
-            else
-                print(indent..tostring(t))
-            end
-        end
-    end
-    sub_print_r(t,"  ")
+	local print_r_cache={}
+	local function sub_print_r(t,indent)
+		if (print_r_cache[tostring(t)]) then
+			print(indent.."*"..tostring(t))
+		else
+			print_r_cache[tostring(t)]=true
+			if (type(t)=="table") then
+				for pos,val in pairs(t) do
+					if (type(val)=="table") then
+						print(indent.."["..pos.."] => "..tostring(t).." {")
+						sub_print_r(val,indent..string.rep(" ",string.len(pos)+8))
+						print(indent..string.rep(" ",string.len(pos)+6).."}")
+					else
+						print(indent.."["..pos.."] => "..tostring(val))
+					end
+				end
+			else
+				print(indent..tostring(t))
+			end
+		end
+	end
+	sub_print_r(t,"  ")
 end
