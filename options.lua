@@ -1,7 +1,7 @@
 defaultOptions = {
 	global = {
 		keys = {
-			"SPACE",
+			"g",
 		},
 		ignoreDisabledButtons = false,
 		showGlow = true,
