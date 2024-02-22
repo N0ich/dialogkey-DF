@@ -150,7 +150,7 @@ local function getPopupButton(popupFrame)
 	-- the ordering here means that a revive will be taken before a battle rez before a release.
 	-- if revives are disabled but soulstone battlerezzes *aren't*, nothing will happen if both are available!
 	-- (originall DialogKey worked this way too, comment if you think this should be changed!)
-	local canRelease = text == DEATH_RELEASE
+	local canRelease = popupFrame.button1:GetText() == DEATH_RELEASE
 	if DialogKey.db.global.useSoulstoneRez and canRelease and popupFrame.button2:IsVisible() then
 		return popupFrame.button2
 	end
