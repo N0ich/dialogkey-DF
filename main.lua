@@ -65,8 +65,14 @@ function DialogKey:OnInitialize()
 	self.frame:RegisterEvent("QUEST_GREETING")
 	self.frame:RegisterEvent("QUEST_COMPLETE")
 	self.frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+	self.frame:RegisterEvent("ADDON_LOADED")
+	local printed = false
 	self.frame:SetScript("OnEvent", function(__, event, ...)
-		if event == "QUEST_COMPLETE" then
+		if event == "ADDON_LOADED" and printed == false then
+			printed = true
+				self:print("DialogKey default binding has been changed to G")
+				self:print("If you wish to keep using SPACE, go to Options > Addons > DialogKey")
+		elseif event == "QUEST_COMPLETE" then
 			DialogKey.itemChoice = (GetNumQuestChoices() > 1 and -1 or 1)
 		elseif event == "PLAYER_REGEN_DISABLED" then
 			-- Disable DialogKey fully upon entering combat
@@ -98,6 +104,7 @@ function DialogKey:OnInitialize()
 	-- Slash command to open the options menu
 	_G.SLASH_DIALOGKEY1 = '/dialogkey'
 	SlashCmdList['DIALOGKEY'] = function() Settings.OpenToCategory("DialogKey") end
+
 end
 
 -- Internal/Private Functions --
