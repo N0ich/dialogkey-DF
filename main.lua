@@ -182,12 +182,10 @@ function DialogKey:HandleKey(key)
 				button:Click()
 				return
 			elseif builtinBlacklist then -- if DialogKey isn't allowed to click a particular button
-				if DialogKey.db.global.showErrorMessage then -- capture the input and display an error message
+				if DialogKey.db.global.showErrorMessage then -- display an error message
 					DialogKey:print("|cffff3333This dialog cannot be clicked by DialogKey. Sorry!|r")
-					DialogKey.frame:SetPropagateKeyboardInput(false)
-				else -- or just do nothing :shrug:
-					DialogKey.frame:SetPropagateKeyboardInput(true)
 				end
+				DialogKey.frame:SetPropagateKeyboardInput(true)
 				return
 			end
 		end
