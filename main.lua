@@ -305,20 +305,21 @@ function DialogKey:EnumerateGossips(isGossipFrame)
 	--   (2) :GetChildren() should return an unpacked list of the sub-objects instead of, you know, a Table.
 	--   :)
 	-- FuriousProgrammer
-	local tab
+local tab = {}
 	DialogKey.frames = {}
 	if isGossipFrame then
-		tab = {}
 		for _, v in pairs{ GossipFrame.GreetingPanel.ScrollBox.ScrollTarget:GetChildren() } do
 			tab[v] = true
 		end
 	else
 		if QuestFrameGreetingPanel and QuestFrameGreetingPanel.titleButtonPool then
-			tab = QuestFrameGreetingPanel.titleButtonPool.activeObjects
-		-- _, tab = QuestFrameGreetingPanel.titleButtonPool:EnumerateActive()
+			for tab in QuestFrameGreetingPanel.titleButtonPool:EnumerateActive() do
+				if tab:GetObjectType() == "Button" then
+					table.insert(DialogKey.frames, tab)
+				end
+			end
 		elseif QuestFrameGreetingPanel and not QuestFrameGreetingPanel.titleButtonPool then
-			tab = {}
-			local children = {QuestGreetingScrollChildFrame:GetChildren()}
+			local children = { QuestGreetingScrollChildFrame:GetChildren() }
 			for i, c in ipairs(children) do
 				if c:GetObjectType() == "Button" and c:IsVisible() then
 					table.insert(DialogKey.frames, c)
