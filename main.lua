@@ -40,7 +40,7 @@ local function GossipDataProviderHook(frame)
 end
 
 function DialogKey:OnInitialize()
-	if IsAddOnLoaded("Immersion") then
+	if C_AddOns.IsAddOnLoaded("Immersion") then
 		self:print("Immersion AddOn detected.")
 		self:print("The Immersion addon is known to conflict with DialogKey!")
 		self:print("Please check your addon settings before reporting bugs.")
