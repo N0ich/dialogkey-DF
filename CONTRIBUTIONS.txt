@@ -8,3 +8,5 @@
 [github]@mbattersby
 - lots of useful error reports and code suggestions!
 
+[github]@mojadu
+- fix 'UseQuestLogSpecialItem()' issue

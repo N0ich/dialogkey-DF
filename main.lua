@@ -12,6 +12,13 @@ builtinDialogBlacklist = { -- If a confirmation dialog contains one of these str
 }
 
 -- Thanks, [github]@mbattersby
+
+-- Override UseQuestLogSpecialItem() to prevent it from being called
+function UseQuestLogSpecialItem()
+    -- Do nothing (or print a debug message if you'd like to log this action)
+    print("UseQuestLogSpecialItem() has been disabled.")
+end
+
 -- Prefix list of GossipFrame(!!) options with 1., 2., 3. etc.
 local function GossipDataProviderHook(frame)
 	local dp = frame.GreetingPanel.ScrollBox:GetDataProvider()
