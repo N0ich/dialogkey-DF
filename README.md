@@ -1,3 +1,7 @@
+# DEPRECATED / ABANDONED
+This version of DialogKey is no longer being maintained! We recommend the excellent Numy fork instead:
+https://www.curseforge.com/wow/addons/dialogkey-numy-edition
+
 # wow-dialogkey
 https://www.curseforge.com/wow/addons/dialogkey-df
 
