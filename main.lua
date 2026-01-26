@@ -46,6 +46,10 @@ function DialogKey:OnInitialize()
 		self:print("Please check your addon settings before reporting bugs.")
 	end
 
+	self:print("[[ DEPRECATION WARNING ]]")
+	self:print("This addon is no longer being maintained! It will likely continue to function for the forseeable future, but it is highly recommended to migrate to an alternate addon.")
+	self:print("We highly recommend the excellent |cffff3333DialogKey - Numy Edition|r!")
+
 	-- defaultOptions defined in `options.lua`
 	self.db = LibStub("AceDB-3.0"):New("DialogKeyDFDB", defaultOptions, true)
 	
